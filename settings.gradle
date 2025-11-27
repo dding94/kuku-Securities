@@ -1,0 +1,7 @@
+rootProject.name = 'kuku'
+
+include 'kuku-common'
+include 'kuku-core-ledger'
+include 'kuku-order-system'
+include 'kuku-market-data'
+include 'kuku-api-gateway'
