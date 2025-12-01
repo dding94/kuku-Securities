@@ -22,6 +22,11 @@
 5.  리뷰가 완료되고 테스트가 통과하면 `main`으로 병합(Merge)합니다.
 6.  `main` 브랜치가 업데이트되면 즉시 배포될 수 있습니다.
 
+### Pull Request Guidelines (PR Size & Scope)
+*   **Small & Focused**: 하나의 PR은 **하나의 논리적 변경(One Logical Change)**만 담아야 합니다. (기능 구현과 리팩토링을 섞지 마세요.)
+*   **Size Limit**: **200~400 Lines of Code (LOC)** 이내를 권장합니다.
+*   **Reviewability**: 리뷰어가 **15분 이내**에 파악할 수 있는 크기여야 합니다. 변경이 너무 크다면 Feature Toggle을 사용하거나 하위 작업으로 쪼개서 PR을 올리세요.
+
 ### Commit Convention (Conventional Commits)
 커밋 메시지는 다음 형식을 따릅니다:
 `type(scope): subject`
