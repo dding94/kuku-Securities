@@ -13,6 +13,15 @@ public class Balance {
     private final LocalDateTime updatedAt;
 
     public Balance(Long accountId, BigDecimal amount, Long version, Long lastTransactionId, LocalDateTime updatedAt) {
+        if (accountId == null) {
+            throw new IllegalArgumentException("Account ID cannot be null");
+        }
+        if (amount == null) {
+            throw new IllegalArgumentException("Amount cannot be null");
+        }
+        if (updatedAt == null) {
+            throw new IllegalArgumentException("UpdatedAt cannot be null");
+        }
         this.accountId = accountId;
         this.amount = amount;
         this.version = version;

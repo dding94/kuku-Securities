@@ -17,12 +17,30 @@ public class JournalEntry {
         DEBIT, CREDIT
     }
 
-    public JournalEntry(Long id, Long transactionId, Long accountId, BigDecimal amount, EntryType entryType) {
+    public JournalEntry(Long id, Long transactionId, Long accountId, BigDecimal amount, EntryType entryType, LocalDateTime createdAt) {
+        if (id == null) {
+            throw new IllegalArgumentException("JournalEntry ID cannot be null");
+        }
+        if (transactionId == null) {
+            throw new IllegalArgumentException("Transaction ID cannot be null");
+        }
+        if (accountId == null) {
+            throw new IllegalArgumentException("Account ID cannot be null");
+        }
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+        if (entryType == null) {
+            throw new IllegalArgumentException("EntryType cannot be null");
+        }
+        if (createdAt == null) {
+            throw new IllegalArgumentException("CreatedAt cannot be null");
+        }
         this.id = id;
         this.transactionId = transactionId;
         this.accountId = accountId;
         this.amount = amount;
         this.entryType = entryType;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = createdAt;
     }
 }

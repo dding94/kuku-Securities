@@ -5,7 +5,7 @@
 
 ## 🏗 Domain Entities (Why & Role)
 
-우리는 왜 `Account`, `Transaction`, `JournalEntry`, `Balance`라는 4가지 도메인을 정의했을까요?
+왜 `Account`, `Transaction`, `JournalEntry`, `Balance`라는 4가지 도메인을 정의했을까요?
 
 ### 1. Account (계좌)
 *   **Role**: 자산(Asset)이 담기는 **그릇(Container)**입니다.

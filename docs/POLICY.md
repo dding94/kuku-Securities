@@ -59,6 +59,8 @@
 *   **TDD (Test-Driven Development)**: 가능한 경우 테스트를 먼저 작성하고 구현합니다.
 *   **Coverage**: 도메인 로직에 대해서는 높은 테스트 커버리지를 유지합니다.
 *   **Test Pyramid**: Unit Test > Integration Test > E2E Test 비율을 유지합니다.
+*   **Deterministic Testing**: 테스트는 언제 실행해도 동일한 결과를 보장해야 합니다.
+    *   `LocalDateTime.now()`, `Random` 등을 직접 사용하지 말고, **고정된 값(Fixed Value)**을 주입하거나 Mocking하여 테스트하세요.
 
 ---
 
