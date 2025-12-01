@@ -9,7 +9,7 @@
 
 | Module | Description | Port |
 |--------|-------------|------|
-| **kuku-core-ledger** | 원장 시스템 (계좌, 자산, 이중부기) | 8081 |
+| **[kuku-core-ledger](kuku-core-ledger/README.md)** | 원장 시스템 (계좌, 자산, 이중부기) | 8081 |
 | **kuku-order-system** | 주문 시스템 (매수/매도, 동시성 제어) | 8082 |
 | **kuku-market-data** | 시세 시스템 (실시간 시세, WebSocket) | 8083 |
 | **kuku-api-gateway** | API 게이트웨이 (인증, 라우팅) | 8080 |
