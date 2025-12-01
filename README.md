@@ -17,7 +17,7 @@
 
 ## 🛠 Tech Stack
 
-- **Language**: Java 21, Kotlin
+- **Language**: Java 21
 - **Framework**: Spring Boot 3.4.0
 - **Database**: MySQL 8.0, Redis
 - **Messaging**: Kafka
