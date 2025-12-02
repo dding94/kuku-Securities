@@ -1,4 +1,4 @@
-package com.invest.kuku.ledger.domain;
+package com.securities.kuku.ledger.domain;
 
 import lombok.Getter;
 import java.math.BigDecimal;

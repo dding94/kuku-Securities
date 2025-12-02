@@ -1,4 +1,4 @@
-package com.invest.kuku.ledger.adapter.out.persistence.entity;
+package com.securities.kuku.ledger.adapter.out.persistence.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

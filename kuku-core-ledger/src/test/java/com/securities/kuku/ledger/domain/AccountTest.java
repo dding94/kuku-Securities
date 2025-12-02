@@ -1,4 +1,4 @@
-package com.invest.kuku.ledger.domain;
+package com.securities.kuku.ledger.domain;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
