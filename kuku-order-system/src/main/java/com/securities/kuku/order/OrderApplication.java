@@ -1,13 +1,13 @@
-package com.invest.kuku.ledger;
+package com.securities.kuku.order;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class LedgerApplication {
+public class OrderApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(LedgerApplication.class, args);
+        SpringApplication.run(OrderApplication.class, args);
     }
 
 }
