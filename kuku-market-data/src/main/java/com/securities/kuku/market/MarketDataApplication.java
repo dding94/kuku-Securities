@@ -1,13 +1,13 @@
-package com.invest.kuku.order;
+package com.securities.kuku.market;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class OrderApplication {
+public class MarketDataApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(OrderApplication.class, args);
+        SpringApplication.run(MarketDataApplication.class, args);
     }
 
 }
