@@ -10,9 +10,11 @@ public class Account {
     private final String accountNumber;
     private final String currency;
 
+    private final AccountType type;
     private final LocalDateTime createdAt;
 
-    public Account(Long id, Long userId, String accountNumber, String currency, LocalDateTime createdAt) {
+    public Account(Long id, Long userId, String accountNumber, String currency, AccountType type,
+            LocalDateTime createdAt) {
         if (id == null) {
             throw new IllegalArgumentException("ID cannot be null");
         }
@@ -22,10 +24,14 @@ public class Account {
         if (createdAt == null) {
             throw new IllegalArgumentException("CreatedAt cannot be null");
         }
+        if (type == null) {
+            throw new IllegalArgumentException("AccountType cannot be null");
+        }
         this.id = id;
         this.userId = userId;
         this.accountNumber = accountNumber;
         this.currency = currency;
+        this.type = type;
         this.createdAt = createdAt;
     }
 }
