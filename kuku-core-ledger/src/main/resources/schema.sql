@@ -14,9 +14,12 @@ CREATE TABLE IF NOT EXISTS `transactions` (
     `type` VARCHAR(50) NOT NULL,
     `description` VARCHAR(255),
     `business_ref_id` VARCHAR(100),
+    `status` VARCHAR(20) NOT NULL,
+    `reversal_of_transaction_id` BIGINT,
     `created_at` DATETIME(6) NOT NULL,
     PRIMARY KEY (`id`),
-    KEY `idx_business_ref_id` (`business_ref_id`)
+    UNIQUE KEY `uk_business_ref_id` (`business_ref_id`),
+    KEY `idx_reversal_of_transaction_id` (`reversal_of_transaction_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `journal_entries` (

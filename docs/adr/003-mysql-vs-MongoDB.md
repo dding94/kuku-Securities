@@ -1,4 +1,4 @@
-# ADR 003: MySQL vs PostgreSQL vs MongoDB for Ledger System
+# ADR 003: MySQL vs MongoDB for Ledger System
 
 ## Status
 Accepted
@@ -20,8 +20,8 @@ Accepted
 ### 1. MySQL (InnoDB) - The Selected One
 *   **Architecture**: **Clustered Index** 구조.
 *   **Pros**:
-    *   **Clustered Index & Sequential I/O**: PK(TSID) 기준으로 데이터가 물리적으로 정렬되어 저장된다. 따라서 시간순 범위 조회(Range Scan) 시 디스크 헤더의 이동을 최소화하는 Sequential I/O가 보장된다. 이는 Random I/O가 발생하는 Heap 구조(PostgreSQL) 대비 압도적인 성능 이점이다.
-    *   **Direct Data Access**: PK가 곧 데이터 페이지의 주소이므로, 별도의 테이블 룩업(Heap Fetch) 과정 없이 즉시 데이터에 접근한다. (PostgreSQL은 Index Scan 후 Heap Table 조회 필요)
+    *   **Clustered Index & Sequential I/O**: PK(TSID) 기준으로 데이터가 물리적으로 정렬되어 저장된다. 따라서 시간순 범위 조회(Range Scan) 시 디스크 헤더의 이동을 최소화하는 Sequential I/O가 보장된다.
+    *   **Direct Data Access**: PK가 곧 데이터 페이지의 주소이므로, 별도의 테이블 룩업(Heap Fetch) 과정 없이 즉시 데이터에 접근한다.
     *   **Undo Log & MVCC**: 롤백 세그먼트(Undo Log)를 통해 MVCC를 구현하므로, 읽기 작업이 쓰기 작업을 차단하지 않으며(Non-locking Read), 별도의 Vacuum 프로세스가 필요 없다.
 *   **Cons**:
     *   Secondary Index Lookup 시 PK를 거쳐야 하므로(Double Lookup), 보조 인덱스가 많을수록 성능이 저하될 수 있다. (하지만 원장은 주로 PK/Time 기반 조회다.)
