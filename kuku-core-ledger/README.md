@@ -51,8 +51,24 @@
 
 | 순서 | Transaction ID | Type | Status | 설명 |
 |------|----------------|------|--------|------|
+### 3. 역분개 (Reversal) 패턴
+잘못된 트랜잭션을 취소할 때는 데이터를 삭제하거나 수정하지 않고, **역분개 트랜잭션(Reversal Transaction)**을 생성하여 상쇄합니다.
+
+*   **원본 트랜잭션**: `status`가 `POSTED` -> `REVERSED`로 변경됩니다 (Copy-on-Write).
+*   **역분개 트랜잭션**:
+    *   `reversalOfTransactionId`에 원본 트랜잭션 ID를 기록합니다.
+    *   `type`은 원본 트랜잭션과 **동일하게 유지**합니다 (예: 입금 취소 시에도 `DEPOSIT`).
+    *   `JournalEntry`는 원본과 반대로 기록되어 잔액을 원복시킵니다.
+
+```mermaid
+graph LR
+    T1[Tx #1: 입금 100원<br>(POSTED -> REVERSED)] -->|취소| T2[Tx #2: 입금 역분개 100원<br>(POSTED)]
+    T2 -->|reversalOf| T1
+```
 | 1 | 100 | DEPOSIT | ~~POSTED~~ → **REVERSED** | 1,000원 입금 (실수!) |
-| 2 | 101 | DEPOSIT | POSTED | 역분개: -1,000원 (reversalOfTransactionId=100) |
+| 2 | 101 | DEPOSIT | POSTED | 역분개: 1,000원 (원본과 동일 금액, JournalEntry가 반대 방향으로 기록되어 상쇄) |
+
+> **Note**: 역분개 트랜잭션의 `Type`은 원본 트랜잭션과 동일하게 유지합니다(예: `DEPOSIT`). 이는 "입금 행위에 대한 취소"임을 명확히 하기 위함이며, 실질적인 잔액 차감은 `JournalEntry`의 차변/대변이 반대로 기록됨으로써 처리됩니다.
 
 *   거래 #100은 삭제되지 않고 `REVERSED` 상태로 남습니다.
 *   거래 #101이 반대 분개를 수행하여 잔액을 원복합니다.

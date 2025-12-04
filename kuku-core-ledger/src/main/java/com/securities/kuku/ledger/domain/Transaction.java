@@ -6,6 +6,13 @@ import java.time.LocalDateTime;
 @Getter
 public class Transaction {
     private final Long id;
+    /**
+     * 트랜잭션의 유형 (예: DEPOSIT, WITHDRAW).
+     * <p>
+     * 역분개(Reversal) 트랜잭션의 경우, 원본 트랜잭션의 타입을 그대로 따릅니다.
+     * 예를 들어, 입금(DEPOSIT)을 취소하는 역분개 트랜잭션의 타입도 DEPOSIT입니다.
+     * 실질적인 취소 효과는 JournalEntry의 차변/대변이 반대로 기록됨으로써 발생합니다.
+     */
     private final TransactionType type;
     private final String description;
     private final String businessRefId;
@@ -27,6 +34,12 @@ public class Transaction {
         if (createdAt == null) {
             throw new IllegalArgumentException("CreatedAt cannot be null");
         }
+        if (status == TransactionStatus.REVERSED && reversalOfTransactionId != null) {
+            throw new IllegalArgumentException("A REVERSED transaction cannot be a reversal of another transaction");
+        }
+        if (reversalOfTransactionId != null && status != TransactionStatus.POSTED) {
+            throw new IllegalArgumentException("Reversal transaction must be in POSTED state");
+        }
         this.id = id;
         this.type = type;
         this.description = description;
@@ -34,5 +47,19 @@ public class Transaction {
         this.status = status;
         this.reversalOfTransactionId = reversalOfTransactionId;
         this.createdAt = createdAt;
+    }
+
+    public Transaction toReversed() {
+        if (this.status != TransactionStatus.POSTED) {
+            throw new IllegalStateException("Only POSTED transactions can be reversed");
+        }
+        return new Transaction(
+                this.id,
+                this.type,
+                this.description,
+                this.businessRefId,
+                TransactionStatus.REVERSED,
+                this.reversalOfTransactionId,
+                this.createdAt);
     }
 }
