@@ -47,11 +47,7 @@
 *   **데이터 무결성**: 중간에 데이터가 사라지면 "잔액의 합 = 분개의 합" 공식이 깨집니다.
 *   **복구 가능성**: 역분개도 되돌릴 수 있습니다(역분개의 역분개).
 
-**예시: 잘못된 입금 취소**
-
-| 순서 | Transaction ID | Type | Status | 설명 |
-|------|----------------|------|--------|------|
-### 3. 역분개 (Reversal) 패턴
+#### 역분개 (Reversal) 메커니즘
 잘못된 트랜잭션을 취소할 때는 데이터를 삭제하거나 수정하지 않고, **역분개 트랜잭션(Reversal Transaction)**을 생성하여 상쇄합니다.
 
 *   **원본 트랜잭션**: `status`가 `POSTED` -> `REVERSED`로 변경됩니다 (Copy-on-Write).
@@ -62,9 +58,14 @@
 
 ```mermaid
 graph LR
-    T1[Tx #1: 입금 100원<br>(POSTED -> REVERSED)] -->|취소| T2[Tx #2: 입금 역분개 100원<br>(POSTED)]
+    T1["Tx #1: 입금 1000원<br>(POSTED -> REVERSED)"] -->|취소| T2["Tx #2: 입금 역분개 1000원<br>(POSTED)"]
     T2 -->|reversalOf| T1
 ```
+
+**예시: 잘못된 입금 취소**
+
+| 순서 | Transaction ID | Type | Status | 설명 |
+|------|----------------|------|--------|------|
 | 1 | 100 | DEPOSIT | ~~POSTED~~ → **REVERSED** | 1,000원 입금 (실수!) |
 | 2 | 101 | DEPOSIT | POSTED | 역분개: 1,000원 (원본과 동일 금액, JournalEntry가 반대 방향으로 기록되어 상쇄) |
 
