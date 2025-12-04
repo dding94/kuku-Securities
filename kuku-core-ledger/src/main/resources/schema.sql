@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS `accounts` (
     `user_id` BIGINT NOT NULL,
     `account_number` VARCHAR(50) NOT NULL,
     `currency` VARCHAR(10) NOT NULL,
+    `type` VARCHAR(20) NOT NULL,
     `created_at` DATETIME(6) NOT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_account_number` (`account_number`)
@@ -12,8 +13,10 @@ CREATE TABLE IF NOT EXISTS `transactions` (
     `id` BIGINT NOT NULL,
     `type` VARCHAR(50) NOT NULL,
     `description` VARCHAR(255),
+    `business_ref_id` VARCHAR(100),
     `created_at` DATETIME(6) NOT NULL,
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    KEY `idx_business_ref_id` (`business_ref_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `journal_entries` (
@@ -31,6 +34,7 @@ CREATE TABLE IF NOT EXISTS `journal_entries` (
 CREATE TABLE IF NOT EXISTS `balances` (
     `account_id` BIGINT NOT NULL,
     `amount` DECIMAL(19, 4) NOT NULL DEFAULT 0,
+    `hold_amount` DECIMAL(19, 4) NOT NULL DEFAULT 0,
     `version` BIGINT NOT NULL DEFAULT 0,
     `last_transaction_id` BIGINT,
     `updated_at` DATETIME(6) NOT NULL,
