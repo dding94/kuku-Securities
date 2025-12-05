@@ -3,6 +3,73 @@
 이 모듈은 금융 시스템의 핵심인 **원장(Ledger)**을 담당합니다.
 데이터의 무결성(Integrity)과 추적 가능성(Traceability)을 보장하기 위해 **이중 부기(Double-Entry Bookkeeping)** 원칙을 따릅니다.
 
+## 🏛 System Architecture
+
+```mermaid
+flowchart TD
+    %% Styles
+    classDef actor fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef gateway fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
+    classDef service fill:#fff9c4,stroke:#fbc02d,stroke-width:2px;
+    classDef ledger fill:#ffccbc,stroke:#d84315,stroke-width:4px;
+    classDef infra fill:#e0e0e0,stroke:#616161,stroke-width:2px,stroke-dasharray: 5 5;
+    classDef db fill:#e0e0e0,stroke:#616161,stroke-width:2px;
+
+    %% Components
+    User(User / Client) ::: actor
+    GW[API Gateway] ::: gateway
+    
+    subgraph "Trading Domain"
+        Order[Order System\n(주문 관리)] ::: service
+        Match[Matching Engine\n(체결 엔진)] ::: service
+    end
+
+    subgraph "Ledger Domain (The Vault)"
+        Ledger[Core Ledger Service] ::: ledger
+        LedgerDB[(Ledger DB\nMySQL)] ::: db
+    end
+
+    subgraph "Read Model (CQRS)"
+        Port[Portfolio View] ::: service
+    end
+
+    Kafka{Kafka\nEvent Backbone} ::: infra
+
+    %% Flow: Order & Hold
+    User -->|1. Place Order| GW
+    GW -->|REST| Order
+    Order -->|2. Request Asset Hold| Ledger
+    Ledger -->|2-1. ACID Tx (Hold)| LedgerDB
+    Ledger --x|2-2. Insufficient Balance| Order
+    Ledger -->|2-2. Hold Success| Order
+    
+    %% Flow: Matching
+    Order -->|3. Send Order (Verified)| Match
+    Match -->|4. Execution (Trade)| Kafka
+    
+    %% Flow: Settlement
+    Kafka == 5. Consume Trade Event ==> Ledger
+    Ledger -->|6. Settle (Use Hold + Fee)| LedgerDB
+    
+    %% Flow: Projection
+    Ledger -.->|7. BalanceChangedEvent| Kafka
+    Kafka -.->|8. Update View| Port
+
+    %% Styling links
+    linkStyle default stroke:#333,stroke-width:1px;
+    linkStyle 3,4,5,6 stroke:#d84315,stroke-width:2px,color:red;
+```
+
+### Asset Hold (자산 동결) - Synchronous or Strong Consistency
+
+주문이 매칭 엔진으로 넘어가기 전, 원장(Ledger)에서 해당 자산(매수 시 현금, 매도 시 주식)을 **동결(Hold)**해야 합니다.
+
+이 과정은 엄격한 정합성이 필요하므로, 주문 시스템이 원장 서비스를 동기적(혹은 높은 신뢰성의 비동기 패턴)으로 호출하여 잔고 부족 시 주문을 즉시 거부(Reject)합니다.
+
+### Settlement (정산) - Event Driven
+
+체결(Trade)은 돌이킬 수 없는 사실입니다. Kafka를 통해 이벤트를 발행하고, 원장 서비스는 이를 구독하여 **최종적 일관성(Eventual Consistency)**을 가지고 실제 자산을 차감/지급합니다.
+
 ## 🏗 Domain Entities (Why & Role)
 
 왜 `Account`, `Transaction`, `JournalEntry`, `Balance`라는 4가지 도메인을 정의했을까요?
@@ -86,25 +153,44 @@ graph LR
 
 ---
 
+## 📊 Database Design Principles
+
+### Logical Foreign Keys (No Physical Constraints)
+
+대규모 트래픽 환경에서의 성능과 안정성을 위해, **물리적인 Foreign Key(FK) 제약조건을 사용하지 않습니다.**
+
+*   **Why?**:
+    *   **Deadlock Prevention**: FK 제약조건은 데이터 삽입/수정 시 부모 테이블에 Lock을 유발하여, 고동시성 환경에서 치명적인 데드락의 원인이 됩니다.
+    *   **Performance**: DB 레벨의 정합성 체크 비용을 제거하여 쓰기 성능(Throughput)을 극대화합니다.
+*   **How?**:
+    *   **Application Level Validation**: 데이터 정합성은 서비스 계층(Service Layer)에서 검증합니다.
+    *   **Eventual Consistency**: 배치(Batch)나 별도의 검증 프로세스를 통해 고아 데이터(Orphaned Rows)를 주기적으로 정리합니다.
+
 ## 📊 Entity Relationship
+
+> **Note**: 아래 다이어그램의 모든 관계는 **Logical Relationship**입니다. 실제 DB 스키마에는 FK 제약조건이 존재하지 않습니다.
 
 ```mermaid
 erDiagram
     Transaction ||--|{ JournalEntry : contains
+    Transaction |o--|| Transaction : "reverses"
     Account ||--o{ JournalEntry : has
     Account ||--|| Balance : has_snapshot
+    Account ||--o{ AssetHold : has_holds
 
     Transaction {
         Long id PK "TSID"
         Enum type "DEPOSIT, TRADE..."
+        Enum status "PENDING, POSTED, REVERSED"
         String description
         String business_ref_id "Unique, Idempotency"
+        Long reversal_of_transaction_id "Logical FK (Self-Ref)"
     }
 
     JournalEntry {
         Long id PK "TSID"
-        Long transaction_id FK
-        Long account_id FK
+        Long transaction_id "Logical FK"
+        Long account_id "Logical FK"
         BigDecimal amount "Always Positive"
         Enum entry_type "DEBIT/CREDIT"
     }
@@ -119,7 +205,16 @@ erDiagram
     Balance {
         Long account_id PK
         BigDecimal amount
-        BigDecimal hold_amount "Frozen Funds"
+        BigDecimal hold_amount "Sum of Active AssetHolds"
         Long version "Optimistic Lock"
+    }
+
+    AssetHold {
+        Long id PK "TSID"
+        Long account_id "Logical FK"
+        String business_ref_id "Order ID"
+        BigDecimal amount
+        Enum status "HELD, RELEASED, CAPTURED"
+        LocalDateTime expires_at
     }
 ```
