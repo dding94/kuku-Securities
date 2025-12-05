@@ -16,40 +16,48 @@ flowchart TD
     classDef db fill:#e0e0e0,stroke:#616161,stroke-width:2px;
 
     %% Components
-    User(User / Client) ::: actor
-    GW[API Gateway] ::: gateway
+    User("User / Client")
+    GW["API Gateway"]
+    class User actor
+    class GW gateway
     
     subgraph "Trading Domain"
-        Order[Order System\n(주문 관리)] ::: service
-        Match[Matching Engine\n(체결 엔진)] ::: service
+        Order["Order System\n(주문 관리)"]
+        Match["Matching Engine\n(체결 엔진)"]
     end
 
     subgraph "Ledger Domain (The Vault)"
-        Ledger[Core Ledger Service] ::: ledger
-        LedgerDB[(Ledger DB\nMySQL)] ::: db
+        Ledger["Core Ledger Service"]
+        LedgerDB[("Ledger DB\nMySQL")]
     end
 
     subgraph "Read Model (CQRS)"
-        Port[Portfolio View] ::: service
+        Port["Portfolio View"]
     end
 
-    Kafka{Kafka\nEvent Backbone} ::: infra
+    Kafka{"Kafka\nEvent Backbone"}
+
+    %% Apply Styles
+    class Order,Match,Port service;
+    class Ledger ledger;
+    class LedgerDB db;
+    class Kafka infra;
 
     %% Flow: Order & Hold
     User -->|1. Place Order| GW
     GW -->|REST| Order
     Order -->|2. Request Asset Hold| Ledger
-    Ledger -->|2-1. ACID Tx (Hold)| LedgerDB
+    Ledger -->|2-1. ACID Tx - Hold| LedgerDB
     Ledger --x|2-2. Insufficient Balance| Order
     Ledger -->|2-2. Hold Success| Order
     
     %% Flow: Matching
-    Order -->|3. Send Order (Verified)| Match
-    Match -->|4. Execution (Trade)| Kafka
+    Order -->|3. Send Order - Verified| Match
+    Match -->|4. Execution - Trade| Kafka
     
     %% Flow: Settlement
     Kafka == 5. Consume Trade Event ==> Ledger
-    Ledger -->|6. Settle (Use Hold + Fee)| LedgerDB
+    Ledger -->|6. Settle - Use Hold + Fee| LedgerDB
     
     %% Flow: Projection
     Ledger -.->|7. BalanceChangedEvent| Kafka
