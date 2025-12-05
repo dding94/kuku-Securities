@@ -1,4 +1,4 @@
-# [ADR-001] 증권 원장 시스템의 Foreign Key 사용 전략
+# [ADR-005] 증권 원장 시스템의 Foreign Key 사용 전략
 
 *   **Status**: Accepted
 *   **Date**: 2025-12-05
