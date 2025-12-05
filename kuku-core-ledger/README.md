@@ -166,7 +166,7 @@ graph LR
     *   **Application Level Validation**: 데이터 정합성은 서비스 계층(Service Layer)에서 검증합니다.
     *   **Eventual Consistency**: 배치(Batch)나 별도의 검증 프로세스를 통해 고아 데이터(Orphaned Rows)를 주기적으로 정리합니다.
 
-## �📊 Entity Relationship
+## 📊 Entity Relationship
 
 > **Note**: 아래 다이어그램의 모든 관계는 **Logical Relationship**입니다. 실제 DB 스키마에는 FK 제약조건이 존재하지 않습니다.
 
