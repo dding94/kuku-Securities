@@ -153,7 +153,7 @@ graph LR
 
 ---
 
-## � Database Design Principles
+## 📊 Database Design Principles
 
 ### Logical Foreign Keys (No Physical Constraints)
 
