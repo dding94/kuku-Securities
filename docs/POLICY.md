@@ -89,6 +89,11 @@
 *   **Domain**: 핵심 비즈니스 로직 (순수 Java 코드)
 *   **Ports**: 도메인이 외부와 소통하기 위한 인터페이스 (Inbound/Outbound)
 *   **Adapters**: 포트의 구현체 (Controller, JPA Repository, Feign Client)
+    *   **Inbound Ports (UseCase)**:
+        *   **Commands (State Change)**: 상태를 변경하는 작업은 **Command 객체**를 사용하여 파라미터를 캡슐화합니다. (e.g., `DepositCommand`)
+            *   Command 객체 생성 시 **Self-Validation**을 수행합니다.
+        *   **Queries (Read Only)**: 데이터를 조회하는 작업은 **Query 객체**를 사용하거나, 단순한 경우 원시 타입을 사용합니다. (e.g., `GetHistoryQuery` vs `Long id`)
+            *   조회 필터가 복잡하거나 파라미터가 2개 이상인 경우 `Query` 객체로 캡슐화합니다.
 
 ### Event-Driven Architecture
 서비스 간의 결합도를 낮추기 위해 비동기 메시징(Kafka)을 적극 활용합니다.
