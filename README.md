@@ -7,6 +7,88 @@
 
 이 프로젝트는 도메인별로 독립적인 마이크로서비스로 구성되어 있습니다.
 
+```mermaid
+graph TD
+    %% 외부 사용자 및 시스템
+    User["📱 Client (App/Web)"]
+    ExternalEx["🏦 External Exchanges<br/>(Upbit, Binance)"]
+
+    %% AWS Cloud Boundary
+    subgraph AWS_Cloud [" AWS Cloud (VPC) "]
+        
+        %% Load Balancer & Ingress
+        ALB[" Application Load Balancer"]
+        
+        %% Public Subnet / DMZ
+        subgraph Public_Subnet
+            Gateway[" API Gateway<br/>(Spring Cloud Gateway)"]
+        end
+
+        %% Private Subnet / EKS Cluster
+        subgraph Private_Subnet_EKS [" Kubernetes Cluster (EKS) "]
+            
+            %% Service Group: Trading Domain
+            subgraph Domain_Services [Trading Core Domain]
+                Order[" Order Service<br/>(주문 접수/상태관리)"]
+                Matching["⚙️ Matching Engine<br/>(모의 체결 시뮬레이션)"]
+                Ledger["💰 Core Ledger Service<br/>(원장/이중부기)"]
+                Position["📊 Portfolio/Position Service<br/>(잔고/수익률 Projection)"]
+            end
+            
+            %% Service Group: Data & Support
+            subgraph Support_Services [Data & Support]
+                MarketData["📈 Market Data Service<br/>(외부 시세 수집/가공)"]
+                SocketServer["🔌 Real-time Push Server<br/>(Netty/WebFlux)"]
+                Reference["🗂️ Reference Service<br/>(종목/기준정보)"]
+            end
+        end
+
+        %% Managed Services (Data & Event)
+        subgraph Data_Layer [Persistence & Messaging]
+            Kafka["📨 Amazon MSK (Kafka)<br/>(Event Backbone)"]
+            Redis["⚡ Amazon ElastiCache (Redis)<br/>(Cache & Distributed Lock)"]
+            RDS["💽 Amazon Aurora (MySQL)<br/>(Main Database)"]
+            ES["🔍 OpenSearch/ELK<br/>(Logs & Monitoring)"]
+        end
+    end
+
+    %% Flow Connections
+    User -->|HTTPS| ALB
+    ALB --> Gateway
+    ExternalEx -->|WebSocket/REST| MarketData
+
+    %% Gateway Routing
+    Gateway --> Order
+    Gateway --> Ledger
+    Gateway --> Position
+    Gateway --> Reference
+    Gateway -->|WebSocket Upgrade| SocketServer
+
+    %% Event Driven Flow (Trading)
+    Order -- "OrderPlacedEvent" --> Kafka
+    Kafka -- Consume --> Matching
+    Matching -- "TradeMatchEvent" --> Kafka
+    Kafka -- Consume --> Ledger
+    Ledger -- "BalanceUpdatedEvent" --> Kafka
+    Kafka -- Consume --> Position
+
+    %% Real-time Data Flow
+    MarketData -- "QuoteEvent" --> Kafka
+    Kafka -- Consume --> SocketServer
+    SocketServer -- "Push" --> User
+    MarketData -.->|Save| Redis
+
+    %% Database Connections
+    Ledger -.-> RDS
+    Order -.-> RDS
+    Position -.-> RDS
+    Reference -.-> RDS
+    
+    %% Cache Connections
+    Order -.->|Dist. Lock| Redis
+    Position -.->|Cache| Redis
+```
+
 | Module | Description | Port |
 |--------|-------------|------|
 | **[kuku-core-ledger](kuku-core-ledger/README.md)** | 원장 시스템 (계좌, 자산, 이중부기) | 8081 |
