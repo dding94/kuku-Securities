@@ -38,9 +38,17 @@
 
 **Alice**: 도메인 관점에서도 `Hold`는 **자금의 임시 차단**입니다. 이걸 비동기로 처리하면 짧은 찰나에 주문이 여러 개 몰릴 때 잔고 이상의 주문이 접수되는 **이중 지불(Double Spend)** 리스크가 커져요. 여기서는 `Balance`에 대한 동기적 락(혹은 매우 빠른 일관성 체크)이 필수입니다.
 
-**Dave**: 일리 있는 지적입니다. `목표.md`에 **낙관적 락(Optimistic Lock, `Balance.version`)** 언급이 있었죠. `Hold`를 동기식으로 유지하되, 3단계 로드맵에 있는 것처럼 엄격한 타임아웃과 서킷 브레이커(Resilience4j)를 붙여서 장애 전파를 막는 방향으로 갑시다.
+**Dave**: 일리 있는 지적입니다. `목표.md`에 **낙관적 락(Optimistic Lock, `Balance.version`)** 언급이 있었죠.
 
-**Bob**: 그리고 **역분개**는 "Append-only" 작업이라서 불변(Immutable) 원장 철학이랑 아주 잘 맞아요. 나중에 DB가 너무 커지면 Vacuuming이 필요하겠지만, 지금 아키텍처로는 이게 제일 안전합니다.
+**Alice**: 그리고 금융 시스템은 이 **"동기 호출"**에서 발생하는 지연과 실패를 어떻게 처리하느냐가 실력의 척도입니다. 단순히 타임아웃만 걸면 되는 게 아니에요.
+1.  **연쇄 장애(Cascading Failure)**: Ledger가 느려지면 Order 스레드도 같이 묶여서 전체가 죽습니다. **Resilience4j**로 Circuit Breaker와 짧은 타임아웃(0.5초)을 강제해야 합니다.
+2.  **"알 수 없음" 상태(Unknown State)**: Order가 `hold()`를 보냈는데 응답을 못 받은 경우, 실제 돈이 묶였는지 아닌지 모릅니다. 이때 **멱등성(Idempotency Key)**이 필수입니다. Order가 재시도(Retry)할 때 Ledger는 "이미 처리된 주문"임을 알고 성공 응답을 줘야 하죠.
+
+**Dave**: 완벽합니다. 그럼 **하이브리드 전략(Hybrid Strategy)**으로 확정합시다.
+- **Validation Phase (Sync)**: `Order` -> `Ledger.hold()` (동기). 가용 잔고 확인 및 동결. (Circuit Breaker 필수)
+- **Execution Phase (Async)**: 체결 후 실제 자산 이동(Settlement)은 Kafka를 통해 비동기로 처리.
+
+**Bob**: 동의합니다. 그리고 **역분개**는 "Append-only" 작업이라서 불변(Immutable) 원장 철학이랑 아주 잘 맞아요. 나중에 DB가 너무 커지면 Vacuuming이 필요하겠지만, 지금 아키텍처로는 이게 제일 안전합니다.
 
 ---
 
