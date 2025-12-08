@@ -3,7 +3,7 @@ package com.securities.kuku.ledger.domain;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -13,7 +13,7 @@ class TransactionTest {
         @Test
         @DisplayName("트랜잭션 타입이 없으면 예외가 발생한다")
         void createTransaction_throwsException_whenTypeIsNull() {
-                LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
                 assertThatThrownBy(() -> new Transaction(1L, null, "Test", "REF-001",
                                 TransactionStatus.POSTED, null, fixedTime))
                                 .isInstanceOf(IllegalArgumentException.class)
@@ -32,7 +32,7 @@ class TransactionTest {
         @Test
         @DisplayName("정상적인 트랜잭션 생성")
         void createTransaction_success() {
-                LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
                 Transaction transaction = new Transaction(1L, TransactionType.DEPOSIT, "Test Description", "REF-001",
                                 TransactionStatus.POSTED, null, fixedTime);
 
@@ -48,7 +48,7 @@ class TransactionTest {
         @Test
         @DisplayName("트랜잭션 상태가 없으면 예외가 발생한다")
         void createTransaction_throwsException_whenStatusIsNull() {
-                LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
                 assertThatThrownBy(() -> new Transaction(1L, TransactionType.DEPOSIT, "Test", "REF-001",
                                 null, null, fixedTime))
                                 .isInstanceOf(IllegalArgumentException.class)
@@ -58,7 +58,7 @@ class TransactionTest {
         @Test
         @DisplayName("역분개 트랜잭션 생성")
         void createTransaction_withReversalOfTransactionId() {
-                LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
                 Transaction reversal = new Transaction(2L, TransactionType.DEPOSIT, "Reversal", "REF-001-REV",
                                 TransactionStatus.POSTED, 1L, fixedTime);
 
@@ -68,7 +68,7 @@ class TransactionTest {
         @Test
         @DisplayName("역분개 트랜잭션은 POSTED 상태여야 한다")
         void createTransaction_throwsException_whenReversalIsNotPosted() {
-                LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
                 assertThatThrownBy(() -> new Transaction(2L, TransactionType.DEPOSIT, "Reversal", "REF-001",
                                 TransactionStatus.PENDING, 1L, fixedTime))
                                 .isInstanceOf(IllegalArgumentException.class)
@@ -78,7 +78,7 @@ class TransactionTest {
         @Test
         @DisplayName("이미 취소된 트랜잭션은 역분개 트랜잭션이 될 수 없다")
         void createTransaction_throwsException_whenReversedHasReversalId() {
-                LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
                 assertThatThrownBy(() -> new Transaction(2L, TransactionType.DEPOSIT, "Reversal", "REF-001",
                                 TransactionStatus.REVERSED, 1L, fixedTime))
                                 .isInstanceOf(IllegalArgumentException.class)
@@ -88,7 +88,7 @@ class TransactionTest {
         @Test
         @DisplayName("toReversed는 상태가 REVERSED로 변경된 새로운 트랜잭션을 반환한다")
         void toReversed_returnsNewTransactionWithReversedStatus() {
-                LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
                 Transaction original = new Transaction(1L, TransactionType.DEPOSIT, "Test", "REF-001",
                                 TransactionStatus.POSTED, null, fixedTime);
 
@@ -103,7 +103,7 @@ class TransactionTest {
         @Test
         @DisplayName("POSTED 상태가 아닌 트랜잭션은 역분개할 수 없다")
         void toReversed_throwsException_whenStatusIsNotPosted() {
-                LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
                 Transaction pending = new Transaction(1L, TransactionType.DEPOSIT, "Test", "REF-001",
                                 TransactionStatus.PENDING, null, fixedTime);
 
@@ -115,7 +115,7 @@ class TransactionTest {
         @Test
         @DisplayName("이미 취소된 트랜잭션은 다시 역분개할 수 없다")
         void toReversed_throwsException_whenStatusIsAlreadyReversed() {
-                LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
                 Transaction reversed = new Transaction(1L, TransactionType.DEPOSIT, "Test", "REF-001",
                                 TransactionStatus.REVERSED, null, fixedTime);
 

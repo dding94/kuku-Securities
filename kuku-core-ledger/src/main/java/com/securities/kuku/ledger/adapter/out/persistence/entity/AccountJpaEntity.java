@@ -9,7 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "accounts")
@@ -31,13 +31,13 @@ public class AccountJpaEntity {
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     public AccountJpaEntity(Long id, Long userId, String accountNumber, String currency) {
         this.id = id;
         this.userId = userId;
         this.accountNumber = accountNumber;
         this.currency = currency;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = Instant.now();
     }
 }

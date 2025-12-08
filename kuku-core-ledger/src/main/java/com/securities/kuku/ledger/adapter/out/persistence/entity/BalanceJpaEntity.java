@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "balances")
@@ -35,11 +35,11 @@ public class BalanceJpaEntity {
 
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     public BalanceJpaEntity(Long accountId, BigDecimal amount) {
         this.accountId = accountId;
         this.amount = amount;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = Instant.now();
     }
 }

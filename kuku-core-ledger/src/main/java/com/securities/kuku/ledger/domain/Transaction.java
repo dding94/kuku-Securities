@@ -1,7 +1,7 @@
 package com.securities.kuku.ledger.domain;
 
 import lombok.Getter;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 public class Transaction {
@@ -11,10 +11,10 @@ public class Transaction {
     private final String businessRefId;
     private final TransactionStatus status;
     private final Long reversalOfTransactionId;
-    private final LocalDateTime createdAt;
+    private final Instant createdAt;
 
     public Transaction(Long id, TransactionType type, String description, String businessRefId,
-            TransactionStatus status, Long reversalOfTransactionId, LocalDateTime createdAt) {
+            TransactionStatus status, Long reversalOfTransactionId, Instant createdAt) {
 
         if (type == null) {
             throw new IllegalArgumentException("Transaction Type cannot be null");
@@ -40,7 +40,7 @@ public class Transaction {
         this.createdAt = createdAt;
     }
 
-    public static Transaction createDeposit(String description, String businessRefId, LocalDateTime now) {
+    public static Transaction createDeposit(String description, String businessRefId, Instant now) {
         return new Transaction(
                 null,
                 TransactionType.DEPOSIT,

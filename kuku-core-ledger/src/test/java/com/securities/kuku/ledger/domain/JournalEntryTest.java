@@ -4,7 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -14,7 +14,7 @@ class JournalEntryTest {
         @Test
         @DisplayName("금액이 0 이하이면 예외가 발생한다")
         void createJournalEntry_throwsException_whenAmountIsNotPositive() {
-                LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
                 assertThatThrownBy(() -> new JournalEntry(1L, 1L, 1L, BigDecimal.ZERO, JournalEntry.EntryType.DEBIT,
                                 fixedTime))
                                 .isInstanceOf(IllegalArgumentException.class)
@@ -33,7 +33,7 @@ class JournalEntryTest {
         @Test
         @DisplayName("정상적인 분개 생성")
         void createJournalEntry_success() {
-                LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
                 JournalEntry entry = new JournalEntry(1L, 10L, 100L, BigDecimal.valueOf(1000),
                                 JournalEntry.EntryType.CREDIT,
                                 fixedTime);

@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "transactions")
@@ -38,17 +38,17 @@ public class TransactionJpaEntity {
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     public TransactionJpaEntity(Long id, TransactionType type, String description, String businessRefId,
             TransactionStatus status,
-            Long reversalOfTransactionId, LocalDateTime createdAt) {
+            Long reversalOfTransactionId, Instant createdAt) {
         this.id = id;
         this.type = type;
         this.description = description;
         this.businessRefId = businessRefId;
         this.status = status;
         this.reversalOfTransactionId = reversalOfTransactionId;
-        this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
+        this.createdAt = createdAt != null ? createdAt : Instant.now();
     }
 }
