@@ -12,17 +12,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class JournalEntryTest {
 
         @Test
-        @DisplayName("분개 ID가 없으면 예외가 발생한다")
-        void createJournalEntry_throwsException_whenIdIsNull() {
-                LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
-                assertThatThrownBy(
-                                () -> new JournalEntry(null, 1L, 1L, BigDecimal.TEN, JournalEntry.EntryType.DEBIT,
-                                                fixedTime))
-                                .isInstanceOf(IllegalArgumentException.class)
-                                .hasMessageContaining("ID");
-        }
-
-        @Test
         @DisplayName("금액이 0 이하이면 예외가 발생한다")
         void createJournalEntry_throwsException_whenAmountIsNotPositive() {
                 LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);

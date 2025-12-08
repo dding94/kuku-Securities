@@ -15,9 +15,7 @@ public class Transaction {
 
     public Transaction(Long id, TransactionType type, String description, String businessRefId,
             TransactionStatus status, Long reversalOfTransactionId, LocalDateTime createdAt) {
-        if (id == null) {
-            throw new IllegalArgumentException("Transaction ID cannot be null");
-        }
+
         if (type == null) {
             throw new IllegalArgumentException("Transaction Type cannot be null");
         }
@@ -40,6 +38,17 @@ public class Transaction {
         this.status = status;
         this.reversalOfTransactionId = reversalOfTransactionId;
         this.createdAt = createdAt;
+    }
+
+    public static Transaction createDeposit(String description, String businessRefId, LocalDateTime now) {
+        return new Transaction(
+                null,
+                TransactionType.DEPOSIT,
+                description,
+                businessRefId,
+                TransactionStatus.POSTED,
+                null,
+                now);
     }
 
     public Transaction toReversed() {

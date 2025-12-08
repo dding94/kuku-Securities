@@ -11,16 +11,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class TransactionTest {
 
         @Test
-        @DisplayName("트랜잭션 ID가 없으면 예외가 발생한다")
-        void createTransaction_throwsException_whenIdIsNull() {
-                LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
-                assertThatThrownBy(() -> new Transaction(null, TransactionType.DEPOSIT, "Test", "REF-001",
-                                TransactionStatus.POSTED, null, fixedTime))
-                                .isInstanceOf(IllegalArgumentException.class)
-                                .hasMessageContaining("ID");
-        }
-
-        @Test
         @DisplayName("트랜잭션 타입이 없으면 예외가 발생한다")
         void createTransaction_throwsException_whenTypeIsNull() {
                 LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
