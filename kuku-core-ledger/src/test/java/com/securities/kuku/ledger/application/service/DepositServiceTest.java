@@ -21,7 +21,7 @@ import com.securities.kuku.ledger.domain.Transaction;
 import com.securities.kuku.ledger.domain.TransactionStatus;
 import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +31,7 @@ import org.mockito.ArgumentCaptor;
 
 class DepositServiceTest {
 
-    private static final LocalDateTime FIXED_TIME = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
+    private static final Instant FIXED_TIME = Instant.parse("2024-01-01T01:00:00Z");
 
     private DepositService sut;
     private Clock fixedClock;
@@ -45,9 +45,7 @@ class DepositServiceTest {
 
     @BeforeEach
     void setUp() {
-        fixedClock = Clock.fixed(
-                FIXED_TIME.atZone(ZoneId.systemDefault()).toInstant(),
-                ZoneId.systemDefault());
+        fixedClock = Clock.fixed(FIXED_TIME, ZoneId.of("UTC"));
 
         loadAccountPort = mock(LoadAccountPort.class);
         loadBalancePort = mock(LoadBalancePort.class);
@@ -207,3 +205,4 @@ class DepositServiceTest {
         });
     }
 }
+

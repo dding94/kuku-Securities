@@ -1,7 +1,7 @@
 package com.securities.kuku.ledger.domain;
 
 import lombok.Getter;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 public class Account {
@@ -11,10 +11,10 @@ public class Account {
     private final String currency;
 
     private final AccountType type;
-    private final LocalDateTime createdAt;
+    private final Instant createdAt;
 
     public Account(Long id, Long userId, String accountNumber, String currency, AccountType type,
-            LocalDateTime createdAt) {
+            Instant createdAt) {
         if (id == null) {
             throw new IllegalArgumentException("ID cannot be null");
         }

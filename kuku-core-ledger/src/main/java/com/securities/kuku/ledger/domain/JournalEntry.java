@@ -2,7 +2,7 @@ package com.securities.kuku.ledger.domain;
 
 import lombok.Getter;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 public class JournalEntry {
@@ -11,14 +11,14 @@ public class JournalEntry {
     private final Long accountId;
     private final BigDecimal amount;
     private final EntryType entryType;
-    private final LocalDateTime createdAt;
+    private final Instant createdAt;
 
     public enum EntryType {
         DEBIT, CREDIT
     }
 
     public JournalEntry(Long id, Long transactionId, Long accountId, BigDecimal amount, EntryType entryType,
-            LocalDateTime createdAt) {
+            Instant createdAt) {
 
         if (transactionId == null) {
             throw new IllegalArgumentException("Transaction ID cannot be null");
@@ -43,7 +43,7 @@ public class JournalEntry {
         this.createdAt = createdAt;
     }
 
-    public static JournalEntry createCredit(Long transactionId, Long accountId, BigDecimal amount, LocalDateTime now) {
+    public static JournalEntry createCredit(Long transactionId, Long accountId, BigDecimal amount, Instant now) {
         return new JournalEntry(
                 null,
                 transactionId,

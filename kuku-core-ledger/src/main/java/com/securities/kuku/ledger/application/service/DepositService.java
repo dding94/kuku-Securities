@@ -13,7 +13,7 @@ import com.securities.kuku.ledger.domain.Balance;
 import com.securities.kuku.ledger.domain.JournalEntry;
 import com.securities.kuku.ledger.domain.Transaction;
 import java.time.Clock;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -49,7 +49,7 @@ public class DepositService implements DepositUseCase {
                 .orElseThrow(() -> new IllegalArgumentException("Balance not found: " + command.accountId()));
 
         // Capture semantic time for this operation
-        LocalDateTime now = LocalDateTime.now(clock);
+        Instant now = clock.instant();
 
         // 3. Create & Save Transaction
         Transaction transaction = Transaction.createDeposit(command.description(), command.businessRefId(), now);

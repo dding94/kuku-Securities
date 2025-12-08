@@ -2,7 +2,7 @@ package com.securities.kuku.ledger.domain;
 
 import lombok.Getter;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 public class Balance {
@@ -11,10 +11,10 @@ public class Balance {
     private final BigDecimal holdAmount;
     private final Long version;
     private final Long lastTransactionId;
-    private final LocalDateTime updatedAt;
+    private final Instant updatedAt;
 
     public Balance(Long accountId, BigDecimal amount, BigDecimal holdAmount, Long version, Long lastTransactionId,
-            LocalDateTime updatedAt) {
+            Instant updatedAt) {
         if (accountId == null) {
             throw new IllegalArgumentException("Account ID cannot be null");
         }
@@ -39,7 +39,7 @@ public class Balance {
         return amount.subtract(holdAmount);
     }
 
-    public Balance deposit(BigDecimal depositAmount, Long transactionId, LocalDateTime now) {
+    public Balance deposit(BigDecimal depositAmount, Long transactionId, Instant now) {
         if (depositAmount == null || depositAmount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Deposit amount must be positive");
         }

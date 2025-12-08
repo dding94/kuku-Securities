@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "journal_entries")
@@ -33,7 +33,7 @@ public class JournalEntryJpaEntity {
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     public enum EntryType {
         DEBIT, CREDIT
@@ -45,6 +45,6 @@ public class JournalEntryJpaEntity {
         this.accountId = accountId;
         this.amount = amount;
         this.entryType = entryType;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = Instant.now();
     }
 }
