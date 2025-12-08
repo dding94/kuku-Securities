@@ -17,10 +17,9 @@ public class JournalEntry {
         DEBIT, CREDIT
     }
 
-    public JournalEntry(Long id, Long transactionId, Long accountId, BigDecimal amount, EntryType entryType, LocalDateTime createdAt) {
-        if (id == null) {
-            throw new IllegalArgumentException("JournalEntry ID cannot be null");
-        }
+    public JournalEntry(Long id, Long transactionId, Long accountId, BigDecimal amount, EntryType entryType,
+            LocalDateTime createdAt) {
+
         if (transactionId == null) {
             throw new IllegalArgumentException("Transaction ID cannot be null");
         }
@@ -42,5 +41,15 @@ public class JournalEntry {
         this.amount = amount;
         this.entryType = entryType;
         this.createdAt = createdAt;
+    }
+
+    public static JournalEntry createCredit(Long transactionId, Long accountId, BigDecimal amount, LocalDateTime now) {
+        return new JournalEntry(
+                null,
+                transactionId,
+                accountId,
+                amount,
+                EntryType.CREDIT,
+                now);
     }
 }

@@ -54,6 +54,7 @@
 *   **Naming**: 변수, 함수, 클래스 이름은 그 의도를 명확히 드러내야 합니다. 축약어 사용을 지양합니다.
 *   **Functions**: 함수는 작게 만들고, 한 가지 일만 하도록 합니다.
 *   **Comments**: 코드로 의도를 표현할 수 없을 때만 주석을 작성합니다. "무엇"이 아닌 "왜"를 설명합니다.
+*   **Abstraction Levels**: 코드를 작성할 때 추상화 레벨을 맞춥니다. 한 함수 안에서는 동일한 수준의 추상화만 존재해야 합니다. (SLAP: Single Level of Abstraction Principle)
 
 ### Testing
 *   **TDD (Test-Driven Development)**: 가능한 경우 테스트를 먼저 작성하고 구현합니다.
@@ -98,3 +99,23 @@
 ### Event-Driven Architecture
 서비스 간의 결합도를 낮추기 위해 비동기 메시징(Kafka)을 적극 활용합니다.
 *   **Eventual Consistency**: 분산 트랜잭션 대신 이벤트를 통한 결과적 일관성을 추구합니다.
+
+---
+
+## 5. Service Layer & Code Organization (서비스 계층 구조)
+
+서비스 클래스의 비대화를 막고 유지보수성을 높이기 위해 다음 원칙을 따릅니다.
+서비스가 커지면 개발자들은 코드를 찾기 위해 스크롤을 끝없이 내려야 하고, Git Merge 충돌도 빈번해집니다.
+
+### 1단계: UseCase별 구현체 분리 (기본 원칙)
+*   **One Interface, One Implementation**: 각 UseCase 인터페이스마다 별도의 구현 클래스(`XxxService`)를 만듭니다.
+    *   e.g., `DepositUseCase` -> `DepositService`, `WithdrawUseCase` -> `WithdrawService`
+*   `LedgerService`와 같은 포괄적인 이름은 지양합니다.
+
+### 2단계: 공통 로직 추출 (Domain Service / Component)
+*   여러 서비스에서 공통으로 사용되는 로직(유효성 검증, 복잡한 계산 등)은 **Domain Service**나 **Component**로 추출하여 재사용합니다.
+*   Private 메서드 복사/붙여넣기를 금지합니다.
+
+### 3단계: Facade 패턴 (복합 로직)
+*   여러 UseCase를 묶어서 실행해야 하는 경우(e.g., 이체: 출금 + 입금)에만 상위 레벨의 **Facade Service**를 둡니다.
+*   단순 UseCase 구현체끼리는 서로 직접 호출하지 않도록 주의합니다 (순환 참조 방지).

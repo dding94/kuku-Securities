@@ -38,4 +38,20 @@ public class Balance {
     public BigDecimal getAvailableAmount() {
         return amount.subtract(holdAmount);
     }
+
+    public Balance deposit(BigDecimal depositAmount, Long transactionId, LocalDateTime now) {
+        if (depositAmount == null || depositAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Deposit amount must be positive");
+        }
+        if (now == null) {
+            throw new IllegalArgumentException("Timestamp cannot be null");
+        }
+        return new Balance(
+                this.accountId,
+                this.amount.add(depositAmount),
+                this.holdAmount,
+                this.version,
+                transactionId,
+                now);
+    }
 }
