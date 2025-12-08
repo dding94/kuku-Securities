@@ -20,7 +20,9 @@ import com.securities.kuku.ledger.domain.JournalEntry;
 import com.securities.kuku.ledger.domain.Transaction;
 import com.securities.kuku.ledger.domain.TransactionStatus;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +31,10 @@ import org.mockito.ArgumentCaptor;
 
 class DepositServiceTest {
 
+    private static final LocalDateTime FIXED_TIME = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
+
     private DepositService sut;
+    private Clock fixedClock;
 
     private LoadAccountPort loadAccountPort;
     private LoadBalancePort loadBalancePort;
@@ -40,6 +45,10 @@ class DepositServiceTest {
 
     @BeforeEach
     void setUp() {
+        fixedClock = Clock.fixed(
+                FIXED_TIME.atZone(ZoneId.systemDefault()).toInstant(),
+                ZoneId.systemDefault());
+
         loadAccountPort = mock(LoadAccountPort.class);
         loadBalancePort = mock(LoadBalancePort.class);
         saveTransactionPort = mock(SaveTransactionPort.class);
@@ -48,6 +57,7 @@ class DepositServiceTest {
         loadTransactionPort = mock(LoadTransactionPort.class);
 
         sut = new DepositService(
+                fixedClock,
                 loadAccountPort,
                 loadBalancePort,
                 saveTransactionPort,
@@ -153,7 +163,7 @@ class DepositServiceTest {
         DepositCommand command = new DepositCommand(accountId, amount, "Deposit", businessRefId);
 
         Transaction existingTx = new Transaction(1L, com.securities.kuku.ledger.domain.TransactionType.DEPOSIT,
-                "Existing", businessRefId, TransactionStatus.POSTED, null, LocalDateTime.now());
+                "Existing", businessRefId, TransactionStatus.POSTED, null, FIXED_TIME);
         given(loadTransactionPort.loadTransaction(businessRefId)).willReturn(Optional.of(existingTx));
 
         // When
@@ -172,14 +182,14 @@ class DepositServiceTest {
                 "123-456",
                 "KRW",
                 AccountType.USER_CASH,
-                LocalDateTime.now());
+                FIXED_TIME);
         Balance balance = new Balance(
                 accountId,
                 BigDecimal.ZERO,
                 BigDecimal.ZERO, // holdAmount
                 0L, // version
                 0L, // lastTransactionId
-                LocalDateTime.now());
+                FIXED_TIME);
 
         given(loadAccountPort.loadAccount(accountId)).willReturn(Optional.of(account));
         given(loadBalancePort.loadBalance(accountId)).willReturn(Optional.of(balance));
