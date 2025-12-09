@@ -51,6 +51,17 @@ public class Transaction {
                 now);
     }
 
+    public static Transaction createWithdraw(String description, String businessRefId, Instant now) {
+        return new Transaction(
+                null,
+                TransactionType.WITHDRAWAL,
+                description,
+                businessRefId,
+                TransactionStatus.POSTED,
+                null,
+                now);
+    }
+
     public Transaction toReversed() {
         if (this.status != TransactionStatus.POSTED) {
             throw new IllegalStateException("Only POSTED transactions can be reversed");

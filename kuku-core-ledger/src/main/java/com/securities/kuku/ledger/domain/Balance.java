@@ -54,4 +54,25 @@ public class Balance {
                 transactionId,
                 now);
     }
+
+    public Balance withdraw(BigDecimal withdrawAmount, Long transactionId, Instant now) {
+        if (withdrawAmount == null || withdrawAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Withdraw amount must be positive");
+        }
+        if (now == null) {
+            throw new IllegalArgumentException("Timestamp cannot be null");
+        }
+        BigDecimal available = getAvailableAmount();
+        if (withdrawAmount.compareTo(available) > 0) {
+            throw new InsufficientBalanceException(
+                    "Insufficient balance. Available: " + available + ", Requested: " + withdrawAmount);
+        }
+        return new Balance(
+                this.accountId,
+                this.amount.subtract(withdrawAmount),
+                this.holdAmount,
+                this.version,
+                transactionId,
+                now);
+    }
 }

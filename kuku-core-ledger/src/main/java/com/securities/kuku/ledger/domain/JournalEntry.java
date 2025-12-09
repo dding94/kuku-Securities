@@ -52,4 +52,14 @@ public class JournalEntry {
                 EntryType.CREDIT,
                 now);
     }
+
+    public static JournalEntry createDebit(Long transactionId, Long accountId, BigDecimal amount, Instant now) {
+        return new JournalEntry(
+                null,
+                transactionId,
+                accountId,
+                amount,
+                EntryType.DEBIT,
+                now);
+    }
 }

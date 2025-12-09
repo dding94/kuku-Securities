@@ -7,6 +7,7 @@ public record WithdrawCommand(
         BigDecimal amount,
         String description,
         String businessRefId) {
+
     public WithdrawCommand {
         if (accountId == null) {
             throw new IllegalArgumentException("Account ID cannot be null");
@@ -17,5 +18,13 @@ public record WithdrawCommand(
         if (businessRefId == null || businessRefId.isBlank()) {
             throw new IllegalArgumentException("Business Reference ID cannot be null or empty");
         }
+    }
+
+    public static WithdrawCommand of(Long accountId, BigDecimal amount, String description, String businessRefId) {
+        return new WithdrawCommand(accountId, amount, description, businessRefId);
+    }
+
+    public static WithdrawCommand of(Long accountId, BigDecimal amount, String businessRefId) {
+        return new WithdrawCommand(accountId, amount, null, businessRefId);
     }
 }

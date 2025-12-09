@@ -19,6 +19,7 @@ import com.securities.kuku.ledger.domain.Balance;
 import com.securities.kuku.ledger.domain.JournalEntry;
 import com.securities.kuku.ledger.domain.Transaction;
 import com.securities.kuku.ledger.domain.TransactionStatus;
+import com.securities.kuku.ledger.domain.TransactionType;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -71,7 +72,7 @@ class DepositServiceTest {
         Long accountId = 1L;
         BigDecimal amount = new BigDecimal("1000");
         String businessRefId = "ref-123";
-        DepositCommand command = new DepositCommand(accountId, amount, "Deposit", businessRefId);
+        DepositCommand command = DepositCommand.of(accountId, amount, "Deposit", businessRefId);
 
         setupAccountAndBalance(accountId);
         given(loadTransactionPort.loadTransaction(businessRefId)).willReturn(Optional.empty());
@@ -94,7 +95,7 @@ class DepositServiceTest {
         Long accountId = 1L;
         BigDecimal amount = new BigDecimal("1000");
         String businessRefId = "ref-123";
-        DepositCommand command = new DepositCommand(accountId, amount, "Deposit", businessRefId);
+        DepositCommand command = DepositCommand.of(accountId, amount, "Deposit", businessRefId);
 
         setupAccountAndBalance(accountId);
         given(loadTransactionPort.loadTransaction(businessRefId)).willReturn(Optional.empty());
@@ -116,7 +117,7 @@ class DepositServiceTest {
         Long accountId = 1L;
         BigDecimal amount = new BigDecimal("1000");
         String businessRefId = "ref-123";
-        DepositCommand command = new DepositCommand(accountId, amount, "Deposit", businessRefId);
+        DepositCommand command = DepositCommand.of(accountId, amount, "Deposit", businessRefId);
 
         setupAccountAndBalance(accountId);
         given(loadTransactionPort.loadTransaction(businessRefId)).willReturn(Optional.empty());
@@ -140,7 +141,7 @@ class DepositServiceTest {
         Long accountId = 999L;
         BigDecimal amount = new BigDecimal("1000");
         String businessRefId = "ref-123";
-        DepositCommand command = new DepositCommand(accountId, amount, "Deposit", businessRefId);
+        DepositCommand command = DepositCommand.of(accountId, amount, "Deposit", businessRefId);
 
         given(loadTransactionPort.loadTransaction(businessRefId)).willReturn(Optional.empty());
         given(loadAccountPort.loadAccount(accountId)).willReturn(Optional.empty());
@@ -158,9 +159,9 @@ class DepositServiceTest {
         Long accountId = 1L;
         BigDecimal amount = new BigDecimal("1000");
         String businessRefId = "ref-123";
-        DepositCommand command = new DepositCommand(accountId, amount, "Deposit", businessRefId);
+        DepositCommand command = DepositCommand.of(accountId, amount, "Deposit", businessRefId);
 
-        Transaction existingTx = new Transaction(1L, com.securities.kuku.ledger.domain.TransactionType.DEPOSIT,
+        Transaction existingTx = new Transaction(1L, TransactionType.DEPOSIT,
                 "Existing", businessRefId, TransactionStatus.POSTED, null, FIXED_TIME);
         given(loadTransactionPort.loadTransaction(businessRefId)).willReturn(Optional.of(existingTx));
 
@@ -205,4 +206,3 @@ class DepositServiceTest {
         });
     }
 }
-
