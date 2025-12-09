@@ -7,6 +7,7 @@ public record DepositCommand(
         BigDecimal amount,
         String description,
         String businessRefId) {
+
     public DepositCommand {
         if (accountId == null) {
             throw new IllegalArgumentException("Account ID cannot be null");
@@ -17,5 +18,13 @@ public record DepositCommand(
         if (businessRefId == null || businessRefId.isBlank()) {
             throw new IllegalArgumentException("Business Reference ID cannot be null or empty");
         }
+    }
+
+    public static DepositCommand of(Long accountId, BigDecimal amount, String description, String businessRefId) {
+        return new DepositCommand(accountId, amount, description, businessRefId);
+    }
+
+    public static DepositCommand of(Long accountId, BigDecimal amount, String businessRefId) {
+        return new DepositCommand(accountId, amount, null, businessRefId);
     }
 }
