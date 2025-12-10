@@ -2,12 +2,10 @@ package com.securities.kuku.ledger.application.service;
 
 import com.securities.kuku.ledger.application.port.in.DepositUseCase;
 import com.securities.kuku.ledger.application.port.in.command.DepositCommand;
-import com.securities.kuku.ledger.application.port.out.LoadAccountPort;
-import com.securities.kuku.ledger.application.port.out.LoadBalancePort;
-import com.securities.kuku.ledger.application.port.out.LoadTransactionPort;
-import com.securities.kuku.ledger.application.port.out.SaveJournalEntryPort;
-import com.securities.kuku.ledger.application.port.out.SaveTransactionPort;
-import com.securities.kuku.ledger.application.port.out.UpdateBalancePort;
+import com.securities.kuku.ledger.application.port.out.AccountPort;
+import com.securities.kuku.ledger.application.port.out.BalancePort;
+import com.securities.kuku.ledger.application.port.out.JournalEntryPort;
+import com.securities.kuku.ledger.application.port.out.TransactionPort;
 import com.securities.kuku.ledger.domain.Account;
 import com.securities.kuku.ledger.domain.Balance;
 import com.securities.kuku.ledger.domain.JournalEntry;
@@ -25,12 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class DepositService implements DepositUseCase {
 
     private final Clock clock;
-    private final LoadAccountPort loadAccountPort;
-    private final LoadBalancePort loadBalancePort;
-    private final SaveTransactionPort saveTransactionPort;
-    private final SaveJournalEntryPort saveJournalEntryPort;
-    private final UpdateBalancePort updateBalancePort;
-    private final LoadTransactionPort loadTransactionPort;
+    private final AccountPort accountPort;
+    private final BalancePort balancePort;
+    private final TransactionPort transactionPort;
+    private final JournalEntryPort journalEntryPort;
 
     @Override
     @Transactional
@@ -42,10 +38,10 @@ public class DepositService implements DepositUseCase {
         }
 
         // 2. Load Aggregates
-        Account account = loadAccountPort.loadAccount(command.accountId())
+        Account account = accountPort.findById(command.accountId())
                 .orElseThrow(() -> new IllegalArgumentException("Account not found: " + command.accountId()));
 
-        Balance balance = loadBalancePort.loadBalance(command.accountId())
+        Balance balance = balancePort.findByAccountId(command.accountId())
                 .orElseThrow(() -> new IllegalArgumentException("Balance not found: " + command.accountId()));
 
         // Capture semantic time for this operation
@@ -53,7 +49,7 @@ public class DepositService implements DepositUseCase {
 
         // 3. Create & Save Transaction
         Transaction transaction = Transaction.createDeposit(command.description(), command.businessRefId(), now);
-        Transaction savedTransaction = saveTransactionPort.saveTransaction(transaction);
+        Transaction savedTransaction = transactionPort.save(transaction);
 
         // 4. Create & Save Journal Entry
         JournalEntry journalEntry = JournalEntry.createCredit(
@@ -61,14 +57,14 @@ public class DepositService implements DepositUseCase {
                 account.getId(),
                 command.amount(),
                 now);
-        saveJournalEntryPort.saveJournalEntry(journalEntry);
+        journalEntryPort.save(journalEntry);
 
         // 5. Update Balance
         Balance newBalance = balance.deposit(command.amount(), savedTransaction.getId(), now);
-        updateBalancePort.updateBalance(newBalance);
+        balancePort.update(newBalance);
     }
 
     private boolean isDuplicateTransaction(String businessRefId) {
-        return loadTransactionPort.loadTransaction(businessRefId).isPresent();
+        return transactionPort.findByBusinessRefId(businessRefId).isPresent();
     }
 }

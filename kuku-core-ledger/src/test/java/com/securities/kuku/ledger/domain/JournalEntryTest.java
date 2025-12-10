@@ -45,4 +45,56 @@ class JournalEntryTest {
                 assertThat(entry.getEntryType()).isEqualTo(JournalEntry.EntryType.CREDIT);
                 assertThat(entry.getCreatedAt()).isEqualTo(fixedTime);
         }
+
+        @Test
+        @DisplayName("CREDIT 분개의 역연산은 잔액에서 출금한다")
+        void applyReverseTo_withdrawsFromBalance_whenCreditEntry() {
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
+                JournalEntry creditEntry = JournalEntry.createCredit(1L, 100L, BigDecimal.valueOf(500), fixedTime);
+                Balance balance = new Balance(100L, BigDecimal.valueOf(1000), BigDecimal.ZERO, 1L, 1L, fixedTime);
+
+                Balance result = creditEntry.applyReverseTo(balance, 2L, fixedTime);
+
+                assertThat(result.getAmount()).isEqualTo(BigDecimal.valueOf(500));
+        }
+
+        @Test
+        @DisplayName("DEBIT 분개의 역연산은 잔액에 입금한다")
+        void applyReverseTo_depositsToBalance_whenDebitEntry() {
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
+                JournalEntry debitEntry = JournalEntry.createDebit(1L, 100L, BigDecimal.valueOf(300), fixedTime);
+                Balance balance = new Balance(100L, BigDecimal.valueOf(1000), BigDecimal.ZERO, 1L, 1L, fixedTime);
+
+                Balance result = debitEntry.applyReverseTo(balance, 2L, fixedTime);
+
+                assertThat(result.getAmount()).isEqualTo(BigDecimal.valueOf(1300));
+        }
+
+        @Test
+        @DisplayName("CREDIT 분개의 반대 분개는 DEBIT이다")
+        void createOpposite_createsDebit_whenCreditEntry() {
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
+                JournalEntry creditEntry = JournalEntry.createCredit(1L, 100L, BigDecimal.valueOf(500), fixedTime);
+
+                JournalEntry opposite = creditEntry.createOpposite(1L, fixedTime);
+
+                assertThat(opposite.getEntryType()).isEqualTo(JournalEntry.EntryType.DEBIT);
+                assertThat(opposite.getAccountId()).isEqualTo(100L);
+                assertThat(opposite.getAmount()).isEqualTo(BigDecimal.valueOf(500));
+                assertThat(opposite.getTransactionId()).isEqualTo(1L);
+        }
+
+        @Test
+        @DisplayName("DEBIT 분개의 반대 분개는 CREDIT이다")
+        void createOpposite_createsCredit_whenDebitEntry() {
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
+                JournalEntry debitEntry = JournalEntry.createDebit(1L, 100L, BigDecimal.valueOf(300), fixedTime);
+
+                JournalEntry opposite = debitEntry.createOpposite(2L, fixedTime);
+
+                assertThat(opposite.getEntryType()).isEqualTo(JournalEntry.EntryType.CREDIT);
+                assertThat(opposite.getAccountId()).isEqualTo(100L);
+                assertThat(opposite.getAmount()).isEqualTo(BigDecimal.valueOf(300));
+                assertThat(opposite.getTransactionId()).isEqualTo(2L);
+        }
 }

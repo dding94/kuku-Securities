@@ -5,6 +5,8 @@ import java.time.Instant;
 
 @Getter
 public class Transaction {
+    private static final String REVERSAL_BUSINESS_REF_PREFIX = "reversal-";
+
     private final Long id;
     private final TransactionType type;
     private final String description;
@@ -63,9 +65,7 @@ public class Transaction {
     }
 
     public Transaction toReversed() {
-        if (this.status != TransactionStatus.POSTED) {
-            throw new IllegalStateException("Only POSTED transactions can be reversed");
-        }
+        validateCanBeReversed();
         return new Transaction(
                 this.id,
                 this.type,
@@ -74,5 +74,31 @@ public class Transaction {
                 TransactionStatus.REVERSED,
                 this.reversalOfTransactionId,
                 this.createdAt);
+    }
+
+    public void validateCanBeReversed() {
+        if (this.status == TransactionStatus.REVERSED) {
+            throw new InvalidTransactionStateException(
+                    "Transaction is already reversed: " + this.id);
+        }
+        if (this.status == TransactionStatus.PENDING) {
+            throw new InvalidTransactionStateException(
+                    "Cannot reverse a PENDING transaction: " + this.id);
+        }
+        if (!this.status.canBeReversed()) {
+            throw new InvalidTransactionStateException(
+                    "Transaction cannot be reversed. Status: " + this.status);
+        }
+    }
+
+    public static Transaction createReversal(Long originalTransactionId, String reason, Instant now) {
+        return new Transaction(
+                null,
+                TransactionType.REVERSAL,
+                reason,
+                REVERSAL_BUSINESS_REF_PREFIX + originalTransactionId,
+                TransactionStatus.POSTED,
+                originalTransactionId,
+                now);
     }
 }

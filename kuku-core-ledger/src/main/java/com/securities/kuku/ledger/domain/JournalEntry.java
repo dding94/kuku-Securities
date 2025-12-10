@@ -62,4 +62,18 @@ public class JournalEntry {
                 EntryType.DEBIT,
                 now);
     }
+
+    public Balance applyReverseTo(Balance balance, Long transactionId, Instant now) {
+        return switch (this.entryType) {
+            case CREDIT -> balance.withdraw(amount, transactionId, now);
+            case DEBIT -> balance.deposit(amount, transactionId, now);
+        };
+    }
+
+    public JournalEntry createOpposite(Long transactionId, Instant now) {
+        return switch (this.entryType) {
+            case CREDIT -> createDebit(transactionId, this.accountId, this.amount, now);
+            case DEBIT -> createCredit(transactionId, this.accountId, this.amount, now);
+        };
+    }
 }

@@ -2,18 +2,15 @@ package com.securities.kuku.ledger.application.service;
 
 import com.securities.kuku.ledger.application.port.in.WithdrawUseCase;
 import com.securities.kuku.ledger.application.port.in.command.WithdrawCommand;
-import com.securities.kuku.ledger.application.port.out.LoadAccountPort;
-import com.securities.kuku.ledger.application.port.out.LoadBalancePort;
-import com.securities.kuku.ledger.application.port.out.LoadTransactionPort;
-import com.securities.kuku.ledger.application.port.out.SaveJournalEntryPort;
-import com.securities.kuku.ledger.application.port.out.SaveTransactionPort;
-import com.securities.kuku.ledger.application.port.out.UpdateBalancePort;
+import com.securities.kuku.ledger.application.port.out.AccountPort;
+import com.securities.kuku.ledger.application.port.out.BalancePort;
+import com.securities.kuku.ledger.application.port.out.JournalEntryPort;
+import com.securities.kuku.ledger.application.port.out.TransactionPort;
 import com.securities.kuku.ledger.domain.Account;
 import com.securities.kuku.ledger.domain.Balance;
 import com.securities.kuku.ledger.domain.InsufficientBalanceException;
 import com.securities.kuku.ledger.domain.JournalEntry;
 import com.securities.kuku.ledger.domain.Transaction;
-
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -28,12 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class WithdrawService implements WithdrawUseCase {
 
     private final Clock clock;
-    private final LoadAccountPort loadAccountPort;
-    private final LoadBalancePort loadBalancePort;
-    private final SaveTransactionPort saveTransactionPort;
-    private final SaveJournalEntryPort saveJournalEntryPort;
-    private final UpdateBalancePort updateBalancePort;
-    private final LoadTransactionPort loadTransactionPort;
+    private final AccountPort accountPort;
+    private final BalancePort balancePort;
+    private final TransactionPort transactionPort;
+    private final JournalEntryPort journalEntryPort;
 
     @Override
     @Transactional
@@ -45,10 +40,10 @@ public class WithdrawService implements WithdrawUseCase {
         }
 
         // 2. Load Aggregates
-        Account account = loadAccountPort.loadAccount(command.accountId())
+        Account account = accountPort.findById(command.accountId())
                 .orElseThrow(() -> new IllegalArgumentException("Account not found: " + command.accountId()));
 
-        Balance balance = loadBalancePort.loadBalance(command.accountId())
+        Balance balance = balancePort.findByAccountId(command.accountId())
                 .orElseThrow(() -> new IllegalArgumentException("Balance not found: " + command.accountId()));
 
         // Capture semantic time for this operation
@@ -59,7 +54,7 @@ public class WithdrawService implements WithdrawUseCase {
 
         // 4. Create & Save Transaction
         Transaction transaction = Transaction.createWithdraw(command.description(), command.businessRefId(), now);
-        Transaction savedTransaction = saveTransactionPort.saveTransaction(transaction);
+        Transaction savedTransaction = transactionPort.save(transaction);
 
         // 5. Create & Save Journal Entry
         JournalEntry journalEntry = JournalEntry.createDebit(
@@ -67,11 +62,11 @@ public class WithdrawService implements WithdrawUseCase {
                 account.getId(),
                 command.amount(),
                 now);
-        saveJournalEntryPort.saveJournalEntry(journalEntry);
+        journalEntryPort.save(journalEntry);
 
         // 6. Update Balance
         Balance newBalance = balance.withdraw(command.amount(), savedTransaction.getId(), now);
-        updateBalancePort.updateBalance(newBalance);
+        balancePort.update(newBalance);
     }
 
     private void validateSufficientBalance(Balance balance, BigDecimal amount) {
@@ -82,6 +77,6 @@ public class WithdrawService implements WithdrawUseCase {
     }
 
     private boolean isDuplicateTransaction(String businessRefId) {
-        return loadTransactionPort.loadTransaction(businessRefId).isPresent();
+        return transactionPort.findByBusinessRefId(businessRefId).isPresent();
     }
 }

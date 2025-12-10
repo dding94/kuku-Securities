@@ -100,6 +100,38 @@
 서비스 간의 결합도를 낮추기 위해 비동기 메시징(Kafka)을 적극 활용합니다.
 *   **Eventual Consistency**: 분산 트랜잭션 대신 이벤트를 통한 결과적 일관성을 추구합니다.
 
+### Outbound Port 설계 가이드라인
+
+Port를 과도하게 세분화하면 보일러플레이트가 증가하고, 과도하게 통합하면 Fat Interface가 됩니다. 다음 기준을 따릅니다.
+
+#### 통합형 Port 권장 상황 (기본 원칙)
+*   동일 Aggregate에 대한 일반적인 CRUD/조회가 대부분인 경우
+*   모두 같은 DB / 같은 트랜잭션 경계에서 처리되는 경우
+*   CQRS나 다른 스토리지 분리가 당장 필요하지 않은 경우
+*   프로젝트/팀 규모가 작고, 구조를 복잡하게 가져가고 싶지 않은 경우
+
+```java
+// 권장: 통합형 Port (5개 이하 메서드)
+interface TransactionPort {
+    Optional<Transaction> findById(Long id);
+    Optional<Transaction> findByBusinessRefId(String refId);
+    Transaction save(Transaction tx);
+    void update(Transaction tx);
+}
+```
+
+#### 세분화형 Port 고려 상황
+1.  **읽기/쓰기 특성이 크게 다를 때** (CQRS, Reporting)
+    *   쓰기: 트랜잭션 중요 (MySQL, 강한 일관성)
+    *   읽기: 별도 Read DB, ElasticSearch, 캐시 등
+    *   → `TransactionCommandPort` / `TransactionQueryPort` 분리
+2.  **전혀 다른 외부 시스템을 붙일 예정일 때**
+    *   외부 증권사 API, Kafka 이벤트 발행, Redis 캐시 등
+    *   → 대상 시스템별 Port 분리
+3.  **하나의 Port에 결이 다른 메서드가 섞이기 시작할 때**
+    *   기본 조회, 통계/리포트용 조회, 배치용 복잡한 쿼리 등
+    *   → `AccountQueryPort` / `AccountReportingPort` / `AccountBatchPort` 분리
+
 ---
 
 ## 5. Service Layer & Code Organization (서비스 계층 구조)
@@ -119,3 +151,79 @@
 ### 3단계: Facade 패턴 (복합 로직)
 *   여러 UseCase를 묶어서 실행해야 하는 경우(e.g., 이체: 출금 + 입금)에만 상위 레벨의 **Facade Service**를 둡니다.
 *   단순 UseCase 구현체끼리는 서로 직접 호출하지 않도록 주의합니다 (순환 참조 방지).
+
+---
+
+## 6. Domain Logic Encapsulation (도메인 로직 캡슐화)
+
+서비스 계층에 분기 로직이 누적되면 코드가 비대해지고 확장성이 떨어집니다. 다음 원칙을 통해 도메인 엔티티에 로직을 응집시킵니다.
+
+### Enum 기반 분기 로직은 도메인에 캡슐화
+
+서비스에서 Enum 값에 따라 분기하는 `if-else` 또는 `switch` 문이 등장하면, 해당 로직을 **도메인 엔티티의 메서드**로 이동시킵니다.
+
+#### ❌ Anti-Pattern: 서비스에 분기 로직
+```java
+// ReversalService.java
+Balance restoredBalance;
+if (entry.getEntryType() == EntryType.CREDIT) {
+    restoredBalance = balance.withdraw(entry.getAmount(), txId, now);
+} else {
+    restoredBalance = balance.deposit(entry.getAmount(), txId, now);
+}
+```
+
+#### ✅ Best Practice: 도메인에 캡슐화
+```java
+// JournalEntry.java (도메인 엔티티)
+public Balance applyReverseTo(Balance balance, Long transactionId, Instant now) {
+    return switch (this.entryType) {
+        case CREDIT -> balance.withdraw(amount, transactionId, now);
+        case DEBIT -> balance.deposit(amount, transactionId, now);
+    };
+}
+
+// ReversalService.java (단순화)
+Balance restoredBalance = entry.applyReverseTo(balance, txId, now);
+```
+
+### 이점
+| 관점 | 설명 |
+|------|------|
+| **확장성** | 새 Enum 값 추가 시 도메인 한 곳만 수정. Switch expression은 누락된 케이스를 **컴파일 에러**로 잡아줌 |
+| **테스트 용이성** | 서비스 통합 테스트 없이 도메인 단위 테스트로 핵심 로직 검증 가능 |
+| **응집도** | 관련 로직이 데이터(Enum)와 함께 위치 |
+| **가독성** | 서비스 코드가 "무엇을 할지"만 표현, "어떻게"는 도메인에 위임 |
+
+### Switch Expression 사용 (Java 14+)
+*   Enum 분기에는 `if-else` 대신 **switch expression**을 사용합니다.
+*   모든 케이스를 커버하지 않으면 컴파일 에러가 발생하여 확장 시 안전합니다.
+
+---
+
+## 7. Test Design Principles (테스트 설계 원칙)
+
+### 서로 다른 값 사용으로 False Positive 방지
+
+테스트 데이터를 구성할 때, **전달된 파라미터가 사용되는지** vs **원본이 복사되는지**를 구분할 수 있도록 서로 다른 값을 사용합니다.
+
+#### ❌ 모호한 테스트 (같은 값)
+```java
+JournalEntry original = JournalEntry.createCredit(1L, 100L, amount, time);
+JournalEntry opposite = original.createOpposite(1L, time);  // 같은 transactionId
+assertThat(opposite.getTransactionId()).isEqualTo(1L);      // 버그 있어도 통과 가능
+```
+
+#### ✅ 명확한 테스트 (다른 값)
+```java
+JournalEntry original = JournalEntry.createCredit(1L, 100L, amount, time);
+JournalEntry opposite = original.createOpposite(2L, time);  // 다른 transactionId
+assertThat(opposite.getTransactionId()).isEqualTo(2L);      // 새 값이 사용되는지 검증
+```
+
+### 테스트 데이터 설계 가이드라인
+| 값의 종류 | 전략 | 예시 |
+|-----------|------|------|
+| **전달되어야 하는 값** | 원본과 **다른 값** 사용 | transactionId: 1L → 2L |
+| **복사되어야 하는 값** | 원본과 **같은 값** 사용 후 검증 | accountId: 100L → 100L |
+| **계산되어야 하는 값** | 예상 결과를 **직접 계산** | amount: 1000 - 500 = 500 |
