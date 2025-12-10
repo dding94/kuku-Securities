@@ -100,6 +100,38 @@
 서비스 간의 결합도를 낮추기 위해 비동기 메시징(Kafka)을 적극 활용합니다.
 *   **Eventual Consistency**: 분산 트랜잭션 대신 이벤트를 통한 결과적 일관성을 추구합니다.
 
+### Outbound Port 설계 가이드라인
+
+Port를 과도하게 세분화하면 보일러플레이트가 증가하고, 과도하게 통합하면 Fat Interface가 됩니다. 다음 기준을 따릅니다.
+
+#### 통합형 Port 권장 상황 (기본 원칙)
+*   동일 Aggregate에 대한 일반적인 CRUD/조회가 대부분인 경우
+*   모두 같은 DB / 같은 트랜잭션 경계에서 처리되는 경우
+*   CQRS나 다른 스토리지 분리가 당장 필요하지 않은 경우
+*   프로젝트/팀 규모가 작고, 구조를 복잡하게 가져가고 싶지 않은 경우
+
+```java
+// 권장: 통합형 Port (5개 이하 메서드)
+interface TransactionPort {
+    Optional<Transaction> findById(Long id);
+    Optional<Transaction> findByBusinessRefId(String refId);
+    Transaction save(Transaction tx);
+    void update(Transaction tx);
+}
+```
+
+#### 세분화형 Port 고려 상황
+1.  **읽기/쓰기 특성이 크게 다를 때** (CQRS, Reporting)
+    *   쓰기: 트랜잭션 중요 (MySQL, 강한 일관성)
+    *   읽기: 별도 Read DB, ElasticSearch, 캐시 등
+    *   → `TransactionCommandPort` / `TransactionQueryPort` 분리
+2.  **전혀 다른 외부 시스템을 붙일 예정일 때**
+    *   외부 증권사 API, Kafka 이벤트 발행, Redis 캐시 등
+    *   → 대상 시스템별 Port 분리
+3.  **하나의 Port에 결이 다른 메서드가 섞이기 시작할 때**
+    *   기본 조회, 통계/리포트용 조회, 배치용 복잡한 쿼리 등
+    *   → `AccountQueryPort` / `AccountReportingPort` / `AccountBatchPort` 분리
+
 ---
 
 ## 5. Service Layer & Code Organization (서비스 계층 구조)

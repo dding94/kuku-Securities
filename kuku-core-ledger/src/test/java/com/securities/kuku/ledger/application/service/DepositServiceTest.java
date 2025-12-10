@@ -7,12 +7,10 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 
 import com.securities.kuku.ledger.application.port.in.command.DepositCommand;
-import com.securities.kuku.ledger.application.port.out.LoadAccountPort;
-import com.securities.kuku.ledger.application.port.out.LoadBalancePort;
-import com.securities.kuku.ledger.application.port.out.LoadTransactionPort;
-import com.securities.kuku.ledger.application.port.out.SaveJournalEntryPort;
-import com.securities.kuku.ledger.application.port.out.SaveTransactionPort;
-import com.securities.kuku.ledger.application.port.out.UpdateBalancePort;
+import com.securities.kuku.ledger.application.port.out.AccountPort;
+import com.securities.kuku.ledger.application.port.out.BalancePort;
+import com.securities.kuku.ledger.application.port.out.JournalEntryPort;
+import com.securities.kuku.ledger.application.port.out.TransactionPort;
 import com.securities.kuku.ledger.domain.Account;
 import com.securities.kuku.ledger.domain.AccountType;
 import com.securities.kuku.ledger.domain.Balance;
@@ -37,32 +35,26 @@ class DepositServiceTest {
     private DepositService sut;
     private Clock fixedClock;
 
-    private LoadAccountPort loadAccountPort;
-    private LoadBalancePort loadBalancePort;
-    private SaveTransactionPort saveTransactionPort;
-    private SaveJournalEntryPort saveJournalEntryPort;
-    private UpdateBalancePort updateBalancePort;
-    private LoadTransactionPort loadTransactionPort;
+    private AccountPort accountPort;
+    private BalancePort balancePort;
+    private TransactionPort transactionPort;
+    private JournalEntryPort journalEntryPort;
 
     @BeforeEach
     void setUp() {
         fixedClock = Clock.fixed(FIXED_TIME, ZoneId.of("UTC"));
 
-        loadAccountPort = mock(LoadAccountPort.class);
-        loadBalancePort = mock(LoadBalancePort.class);
-        saveTransactionPort = mock(SaveTransactionPort.class);
-        saveJournalEntryPort = mock(SaveJournalEntryPort.class);
-        updateBalancePort = mock(UpdateBalancePort.class);
-        loadTransactionPort = mock(LoadTransactionPort.class);
+        accountPort = mock(AccountPort.class);
+        balancePort = mock(BalancePort.class);
+        transactionPort = mock(TransactionPort.class);
+        journalEntryPort = mock(JournalEntryPort.class);
 
         sut = new DepositService(
                 fixedClock,
-                loadAccountPort,
-                loadBalancePort,
-                saveTransactionPort,
-                saveJournalEntryPort,
-                updateBalancePort,
-                loadTransactionPort);
+                accountPort,
+                balancePort,
+                transactionPort,
+                journalEntryPort);
     }
 
     @Test
@@ -75,14 +67,14 @@ class DepositServiceTest {
         DepositCommand command = DepositCommand.of(accountId, amount, "Deposit", businessRefId);
 
         setupAccountAndBalance(accountId);
-        given(loadTransactionPort.loadTransaction(businessRefId)).willReturn(Optional.empty());
+        given(transactionPort.findByBusinessRefId(businessRefId)).willReturn(Optional.empty());
 
         // When
         sut.deposit(command);
 
         // Then
         ArgumentCaptor<Transaction> txCaptor = ArgumentCaptor.forClass(Transaction.class);
-        then(saveTransactionPort).should().saveTransaction(txCaptor.capture());
+        then(transactionPort).should().save(txCaptor.capture());
         Transaction savedTx = txCaptor.getValue();
         assertThat(savedTx.getStatus()).isEqualTo(TransactionStatus.POSTED);
         assertThat(savedTx.getBusinessRefId()).isEqualTo(businessRefId);
@@ -98,14 +90,14 @@ class DepositServiceTest {
         DepositCommand command = DepositCommand.of(accountId, amount, "Deposit", businessRefId);
 
         setupAccountAndBalance(accountId);
-        given(loadTransactionPort.loadTransaction(businessRefId)).willReturn(Optional.empty());
+        given(transactionPort.findByBusinessRefId(businessRefId)).willReturn(Optional.empty());
 
         // When
         sut.deposit(command);
 
         // Then
         ArgumentCaptor<Balance> balanceCaptor = ArgumentCaptor.forClass(Balance.class);
-        then(updateBalancePort).should().updateBalance(balanceCaptor.capture());
+        then(balancePort).should().update(balanceCaptor.capture());
         Balance updatedBalance = balanceCaptor.getValue();
         assertThat(updatedBalance.getAmount()).isEqualByComparingTo(new BigDecimal("1000")); // 0 + 1000
     }
@@ -120,14 +112,14 @@ class DepositServiceTest {
         DepositCommand command = DepositCommand.of(accountId, amount, "Deposit", businessRefId);
 
         setupAccountAndBalance(accountId);
-        given(loadTransactionPort.loadTransaction(businessRefId)).willReturn(Optional.empty());
+        given(transactionPort.findByBusinessRefId(businessRefId)).willReturn(Optional.empty());
 
         // When
         sut.deposit(command);
 
         // Then
         ArgumentCaptor<JournalEntry> journalCaptor = ArgumentCaptor.forClass(JournalEntry.class);
-        then(saveJournalEntryPort).should().saveJournalEntry(journalCaptor.capture());
+        then(journalEntryPort).should().save(journalCaptor.capture());
         JournalEntry savedJournal = journalCaptor.getValue();
         assertThat(savedJournal.getAmount()).isEqualByComparingTo(amount);
         assertThat(savedJournal.getEntryType()).isEqualTo(JournalEntry.EntryType.CREDIT);
@@ -143,8 +135,8 @@ class DepositServiceTest {
         String businessRefId = "ref-123";
         DepositCommand command = DepositCommand.of(accountId, amount, "Deposit", businessRefId);
 
-        given(loadTransactionPort.loadTransaction(businessRefId)).willReturn(Optional.empty());
-        given(loadAccountPort.loadAccount(accountId)).willReturn(Optional.empty());
+        given(transactionPort.findByBusinessRefId(businessRefId)).willReturn(Optional.empty());
+        given(accountPort.findById(accountId)).willReturn(Optional.empty());
 
         // When & Then
         org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> {
@@ -163,15 +155,16 @@ class DepositServiceTest {
 
         Transaction existingTx = new Transaction(1L, TransactionType.DEPOSIT,
                 "Existing", businessRefId, TransactionStatus.POSTED, null, FIXED_TIME);
-        given(loadTransactionPort.loadTransaction(businessRefId)).willReturn(Optional.of(existingTx));
+        given(transactionPort.findByBusinessRefId(businessRefId)).willReturn(Optional.of(existingTx));
 
         // When
         sut.deposit(command);
 
         // Then
-        then(saveTransactionPort).shouldHaveNoInteractions();
-        then(updateBalancePort).shouldHaveNoInteractions();
-        then(saveJournalEntryPort).shouldHaveNoInteractions();
+        then(transactionPort).should().findByBusinessRefId(businessRefId);
+        then(transactionPort).shouldHaveNoMoreInteractions();
+        then(balancePort).shouldHaveNoInteractions();
+        then(journalEntryPort).shouldHaveNoInteractions();
     }
 
     private void setupAccountAndBalance(Long accountId) {
@@ -190,10 +183,10 @@ class DepositServiceTest {
                 0L, // lastTransactionId
                 FIXED_TIME);
 
-        given(loadAccountPort.loadAccount(accountId)).willReturn(Optional.of(account));
-        given(loadBalancePort.loadBalance(accountId)).willReturn(Optional.of(balance));
+        given(accountPort.findById(accountId)).willReturn(Optional.of(account));
+        given(balancePort.findByAccountId(accountId)).willReturn(Optional.of(balance));
 
-        given(saveTransactionPort.saveTransaction(any())).willAnswer(invocation -> {
+        given(transactionPort.save(any())).willAnswer(invocation -> {
             Transaction tx = invocation.getArgument(0);
             return new Transaction(
                     999L, // Simulated Generated ID

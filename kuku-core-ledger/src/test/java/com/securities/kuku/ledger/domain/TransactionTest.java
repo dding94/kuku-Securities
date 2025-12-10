@@ -108,8 +108,8 @@ class TransactionTest {
                                 TransactionStatus.PENDING, null, fixedTime);
 
                 assertThatThrownBy(() -> pending.toReversed())
-                                .isInstanceOf(IllegalStateException.class)
-                                .hasMessage("Only POSTED transactions can be reversed");
+                                .isInstanceOf(InvalidTransactionStateException.class)
+                                .hasMessageContaining("Cannot reverse a PENDING transaction");
         }
 
         @Test
@@ -120,7 +120,7 @@ class TransactionTest {
                                 TransactionStatus.REVERSED, null, fixedTime);
 
                 assertThatThrownBy(() -> reversed.toReversed())
-                                .isInstanceOf(IllegalStateException.class)
-                                .hasMessage("Only POSTED transactions can be reversed");
+                                .isInstanceOf(InvalidTransactionStateException.class)
+                                .hasMessageContaining("Transaction is already reversed");
         }
 }
