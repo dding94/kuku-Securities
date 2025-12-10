@@ -198,32 +198,3 @@ Balance restoredBalance = entry.applyReverseTo(balance, txId, now);
 ### Switch Expression 사용 (Java 14+)
 *   Enum 분기에는 `if-else` 대신 **switch expression**을 사용합니다.
 *   모든 케이스를 커버하지 않으면 컴파일 에러가 발생하여 확장 시 안전합니다.
-
----
-
-## 7. Test Design Principles (테스트 설계 원칙)
-
-### 서로 다른 값 사용으로 False Positive 방지
-
-테스트 데이터를 구성할 때, **전달된 파라미터가 사용되는지** vs **원본이 복사되는지**를 구분할 수 있도록 서로 다른 값을 사용합니다.
-
-#### ❌ 모호한 테스트 (같은 값)
-```java
-JournalEntry original = JournalEntry.createCredit(1L, 100L, amount, time);
-JournalEntry opposite = original.createOpposite(1L, time);  // 같은 transactionId
-assertThat(opposite.getTransactionId()).isEqualTo(1L);      // 버그 있어도 통과 가능
-```
-
-#### ✅ 명확한 테스트 (다른 값)
-```java
-JournalEntry original = JournalEntry.createCredit(1L, 100L, amount, time);
-JournalEntry opposite = original.createOpposite(2L, time);  // 다른 transactionId
-assertThat(opposite.getTransactionId()).isEqualTo(2L);      // 새 값이 사용되는지 검증
-```
-
-### 테스트 데이터 설계 가이드라인
-| 값의 종류 | 전략 | 예시 |
-|-----------|------|------|
-| **전달되어야 하는 값** | 원본과 **다른 값** 사용 | transactionId: 1L → 2L |
-| **복사되어야 하는 값** | 원본과 **같은 값** 사용 후 검증 | accountId: 100L → 100L |
-| **계산되어야 하는 값** | 예상 결과를 **직접 계산** | amount: 1000 - 500 = 500 |
