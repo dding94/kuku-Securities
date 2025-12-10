@@ -76,12 +76,12 @@ class JournalEntryTest {
                 Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
                 JournalEntry creditEntry = JournalEntry.createCredit(1L, 100L, BigDecimal.valueOf(500), fixedTime);
 
-                JournalEntry opposite = creditEntry.createOpposite(1L, fixedTime);
+                JournalEntry opposite = creditEntry.createOpposite(2L, fixedTime);
 
                 assertThat(opposite.getEntryType()).isEqualTo(JournalEntry.EntryType.DEBIT);
                 assertThat(opposite.getAccountId()).isEqualTo(100L);
                 assertThat(opposite.getAmount()).isEqualTo(BigDecimal.valueOf(500));
-                assertThat(opposite.getTransactionId()).isEqualTo(1L);
+                assertThat(opposite.getTransactionId()).isEqualTo(2L);
         }
 
         @Test
