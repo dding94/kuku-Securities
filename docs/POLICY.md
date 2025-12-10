@@ -151,3 +151,79 @@ interface TransactionPort {
 ### 3단계: Facade 패턴 (복합 로직)
 *   여러 UseCase를 묶어서 실행해야 하는 경우(e.g., 이체: 출금 + 입금)에만 상위 레벨의 **Facade Service**를 둡니다.
 *   단순 UseCase 구현체끼리는 서로 직접 호출하지 않도록 주의합니다 (순환 참조 방지).
+
+---
+
+## 6. Domain Logic Encapsulation (도메인 로직 캡슐화)
+
+서비스 계층에 분기 로직이 누적되면 코드가 비대해지고 확장성이 떨어집니다. 다음 원칙을 통해 도메인 엔티티에 로직을 응집시킵니다.
+
+### Enum 기반 분기 로직은 도메인에 캡슐화
+
+서비스에서 Enum 값에 따라 분기하는 `if-else` 또는 `switch` 문이 등장하면, 해당 로직을 **도메인 엔티티의 메서드**로 이동시킵니다.
+
+#### ❌ Anti-Pattern: 서비스에 분기 로직
+```java
+// ReversalService.java
+Balance restoredBalance;
+if (entry.getEntryType() == EntryType.CREDIT) {
+    restoredBalance = balance.withdraw(entry.getAmount(), txId, now);
+} else {
+    restoredBalance = balance.deposit(entry.getAmount(), txId, now);
+}
+```
+
+#### ✅ Best Practice: 도메인에 캡슐화
+```java
+// JournalEntry.java (도메인 엔티티)
+public Balance applyReverseTo(Balance balance, Long transactionId, Instant now) {
+    return switch (this.entryType) {
+        case CREDIT -> balance.withdraw(amount, transactionId, now);
+        case DEBIT -> balance.deposit(amount, transactionId, now);
+    };
+}
+
+// ReversalService.java (단순화)
+Balance restoredBalance = entry.applyReverseTo(balance, txId, now);
+```
+
+### 이점
+| 관점 | 설명 |
+|------|------|
+| **확장성** | 새 Enum 값 추가 시 도메인 한 곳만 수정. Switch expression은 누락된 케이스를 **컴파일 에러**로 잡아줌 |
+| **테스트 용이성** | 서비스 통합 테스트 없이 도메인 단위 테스트로 핵심 로직 검증 가능 |
+| **응집도** | 관련 로직이 데이터(Enum)와 함께 위치 |
+| **가독성** | 서비스 코드가 "무엇을 할지"만 표현, "어떻게"는 도메인에 위임 |
+
+### Switch Expression 사용 (Java 14+)
+*   Enum 분기에는 `if-else` 대신 **switch expression**을 사용합니다.
+*   모든 케이스를 커버하지 않으면 컴파일 에러가 발생하여 확장 시 안전합니다.
+
+---
+
+## 7. Test Design Principles (테스트 설계 원칙)
+
+### 서로 다른 값 사용으로 False Positive 방지
+
+테스트 데이터를 구성할 때, **전달된 파라미터가 사용되는지** vs **원본이 복사되는지**를 구분할 수 있도록 서로 다른 값을 사용합니다.
+
+#### ❌ 모호한 테스트 (같은 값)
+```java
+JournalEntry original = JournalEntry.createCredit(1L, 100L, amount, time);
+JournalEntry opposite = original.createOpposite(1L, time);  // 같은 transactionId
+assertThat(opposite.getTransactionId()).isEqualTo(1L);      // 버그 있어도 통과 가능
+```
+
+#### ✅ 명확한 테스트 (다른 값)
+```java
+JournalEntry original = JournalEntry.createCredit(1L, 100L, amount, time);
+JournalEntry opposite = original.createOpposite(2L, time);  // 다른 transactionId
+assertThat(opposite.getTransactionId()).isEqualTo(2L);      // 새 값이 사용되는지 검증
+```
+
+### 테스트 데이터 설계 가이드라인
+| 값의 종류 | 전략 | 예시 |
+|-----------|------|------|
+| **전달되어야 하는 값** | 원본과 **다른 값** 사용 | transactionId: 1L → 2L |
+| **복사되어야 하는 값** | 원본과 **같은 값** 사용 후 검증 | accountId: 100L → 100L |
+| **계산되어야 하는 값** | 예상 결과를 **직접 계산** | amount: 1000 - 500 = 500 |

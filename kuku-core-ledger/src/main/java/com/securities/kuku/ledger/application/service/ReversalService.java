@@ -88,30 +88,13 @@ public class ReversalService implements ReversalUseCase {
 
     private List<JournalEntry> createOppositeEntries(List<JournalEntry> originals, Long reversalTransactionId,
             Instant now) {
-        List<JournalEntry> oppositeEntries = new ArrayList<>();
-        for (JournalEntry original : originals) {
-            JournalEntry opposite;
-            if (original.getEntryType() == JournalEntry.EntryType.CREDIT) {
-                opposite = JournalEntry.createDebit(
-                        reversalTransactionId,
-                        original.getAccountId(),
-                        original.getAmount(),
-                        now);
-            } else {
-                opposite = JournalEntry.createCredit(
-                        reversalTransactionId,
-                        original.getAccountId(),
-                        original.getAmount(),
-                        now);
-            }
-            oppositeEntries.add(opposite);
-        }
-        return oppositeEntries;
+        return originals.stream()
+                .map(original -> original.createOpposite(reversalTransactionId, now))
+                .toList();
     }
 
     private List<Balance> restoreBalances(List<JournalEntry> originalEntries, Map<Long, Balance> balanceMap,
             Long transactionId, Instant now) {
-        List<Balance> restoredBalances = new ArrayList<>();
 
         for (JournalEntry originalEntry : originalEntries) {
             Long accountId = originalEntry.getAccountId();
@@ -121,20 +104,11 @@ public class ReversalService implements ReversalUseCase {
                 throw new IllegalArgumentException("Balance not found: " + accountId);
             }
 
-            Balance restoredBalance;
-            if (originalEntry.getEntryType() == JournalEntry.EntryType.CREDIT) {
-                // Original was CREDIT (deposit) -> reverse by withdrawing
-                restoredBalance = balance.withdraw(originalEntry.getAmount(), transactionId, now);
-            } else {
-                // Original was DEBIT (withdraw) -> reverse by depositing
-                restoredBalance = balance.deposit(originalEntry.getAmount(), transactionId, now);
-            }
+            Balance restoredBalance = originalEntry.applyReverseTo(balance, transactionId, now);
 
-            // Update map for subsequent operations on same account
             balanceMap.put(accountId, restoredBalance);
-            restoredBalances.add(restoredBalance);
         }
 
-        return restoredBalances;
+        return new ArrayList<>(balanceMap.values());
     }
 }
