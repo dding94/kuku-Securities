@@ -1,10 +1,10 @@
 package com.securities.kuku.ledger.adapter.out.persistence.entity;
 
+import com.securities.kuku.ledger.domain.JournalEntry;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -16,6 +16,7 @@ import java.time.Instant;
 public class JournalEntryJpaEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "transaction_id", nullable = false)
@@ -29,22 +30,32 @@ public class JournalEntryJpaEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "entry_type", nullable = false)
-    private EntryType entryType;
+    private JournalEntry.EntryType entryType;
 
-    @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    public enum EntryType {
-        DEBIT, CREDIT
-    }
-
-    public JournalEntryJpaEntity(Long id, Long transactionId, Long accountId, BigDecimal amount, EntryType entryType) {
+    public JournalEntryJpaEntity(Long id, Long transactionId, Long accountId,
+            BigDecimal amount, JournalEntry.EntryType entryType, Instant createdAt) {
         this.id = id;
         this.transactionId = transactionId;
         this.accountId = accountId;
         this.amount = amount;
         this.entryType = entryType;
-        this.createdAt = Instant.now();
+        this.createdAt = createdAt != null ? createdAt : Instant.now();
+    }
+
+    public JournalEntry toDomain() {
+        return new JournalEntry(id, transactionId, accountId, amount, entryType, createdAt);
+    }
+
+    public static JournalEntryJpaEntity fromDomain(JournalEntry journalEntry) {
+        return new JournalEntryJpaEntity(
+                journalEntry.getId(),
+                journalEntry.getTransactionId(),
+                journalEntry.getAccountId(),
+                journalEntry.getAmount(),
+                journalEntry.getEntryType(),
+                journalEntry.getCreatedAt());
     }
 }

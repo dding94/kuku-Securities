@@ -1,12 +1,12 @@
 package com.securities.kuku.ledger.adapter.out.persistence.entity;
 
+import com.securities.kuku.ledger.domain.Transaction;
 import com.securities.kuku.ledger.domain.TransactionStatus;
 import com.securities.kuku.ledger.domain.TransactionType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
 
 import java.time.Instant;
 
@@ -17,6 +17,7 @@ import java.time.Instant;
 public class TransactionJpaEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Enumerated(EnumType.STRING)
@@ -36,13 +37,11 @@ public class TransactionJpaEntity {
     @Column(name = "reversal_of_transaction_id")
     private Long reversalOfTransactionId;
 
-    @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     public TransactionJpaEntity(Long id, TransactionType type, String description, String businessRefId,
-            TransactionStatus status,
-            Long reversalOfTransactionId, Instant createdAt) {
+            TransactionStatus status, Long reversalOfTransactionId, Instant createdAt) {
         this.id = id;
         this.type = type;
         this.description = description;
@@ -50,5 +49,24 @@ public class TransactionJpaEntity {
         this.status = status;
         this.reversalOfTransactionId = reversalOfTransactionId;
         this.createdAt = createdAt != null ? createdAt : Instant.now();
+    }
+
+    public Transaction toDomain() {
+        return new Transaction(id, type, description, businessRefId, status, reversalOfTransactionId, createdAt);
+    }
+
+    public static TransactionJpaEntity fromDomain(Transaction transaction) {
+        return new TransactionJpaEntity(
+                transaction.getId(),
+                transaction.getType(),
+                transaction.getDescription(),
+                transaction.getBusinessRefId(),
+                transaction.getStatus(),
+                transaction.getReversalOfTransactionId(),
+                transaction.getCreatedAt());
+    }
+
+    public void updateStatus(TransactionStatus newStatus) {
+        this.status = newStatus;
     }
 }
