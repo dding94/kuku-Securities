@@ -61,7 +61,7 @@ sequenceDiagram
 
     Note over RS: 3. 원본 분개 조회
     RS->>JP: findByTransactionId(transactionId)
-    JP->>DB: SELECT * FROM journal_entries
+    JP->>DB: SELECT * FROM journal_entries WHERE transaction_id = ?
     DB-->>JP: List<JournalEntry>
     JP-->>RS: List<JournalEntry>
 
