@@ -19,16 +19,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.context.ActiveProfiles;
 
-/**
- * 동시성 테스트: Race Condition 검증
- * 
- * <p>
- * 리팩토링된 버전: ConcurrencyRunner와 LedgerTestFixture를 사용하여 SRP를 준수합니다.
- * </p>
- */
 @SpringBootTest
 @ActiveProfiles("test")
-@Import(LedgerTestFixture.class) // 테스트 전용 Fixture: @Component 미사용, 명시적 Import 필요
+@Import(LedgerTestFixture.class)
 class ConcurrentWithdrawIntegrationTest {
 
     @Autowired

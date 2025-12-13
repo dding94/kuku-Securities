@@ -43,6 +43,26 @@ public class BalancePersistenceAdapter implements BalancePort {
 
     @Override
     public void updateAll(Collection<Balance> balances) {
-        balances.forEach(this::update);
+        if (balances.isEmpty()) {
+            return;
+        }
+
+        Set<Long> accountIds = balances.stream()
+                .map(Balance::getAccountId)
+                .collect(Collectors.toSet());
+
+        Map<Long, BalanceJpaEntity> entityMap = balanceJpaRepository.findByAccountIdIn(accountIds)
+                .stream()
+                .collect(Collectors.toMap(BalanceJpaEntity::getAccountId, Function.identity()));
+
+        balances.forEach(balance -> {
+            BalanceJpaEntity entity = entityMap.get(balance.getAccountId());
+            if (entity == null) {
+                throw new IllegalArgumentException("Balance not found: " + balance.getAccountId());
+            }
+            entity.updateFrom(balance);
+        });
+
+        balanceJpaRepository.saveAll(entityMap.values());
     }
 }

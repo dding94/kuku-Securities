@@ -367,5 +367,4 @@ public void assertLedgerConsistency(Long accountId,
 ## 6. 참고 자료
 
 - [JPA Optimistic Locking](https://docs.jboss.org/hibernate/orm/6.4/userguide/html_single/Hibernate_User_Guide.html#locking-optimistic)
-- [Spring @Transactional Deep Dive](file:///Users/myeonggu.jung/Desktop/MG/01-이직/01-개인프로젝트/kuku/docs/deep-dive/spring-transactional.md)
 - [MySQL InnoDB Locking](https://dev.mysql.com/doc/refman/8.0/en/innodb-locking.html)
