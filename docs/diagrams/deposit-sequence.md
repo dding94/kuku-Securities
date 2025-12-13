@@ -117,12 +117,18 @@ sequenceDiagram
     Note over S: 5. 영속화
     S->>TP: save(Transaction)
     TP->>DB: INSERT INTO transactions
+    DB-->>TP: Transaction (with ID)
+    TP-->>S: Transaction
     
     S->>JP: save(JournalEntry)
     JP->>DB: INSERT INTO journal_entries
+    DB-->>JP: JournalEntry
+    JP-->>S: JournalEntry
     
     S->>BP: update(Balance)
-    BP->>DB: UPDATE balances (Optimistic Lock)
+    BP->>DB: UPDATE balances SET amount = ?, version = version + 1
+    DB-->>BP: 1 row updated
+    BP-->>S: Balance
     
     Note over BP,DB: version 불일치 시<br/>OptimisticLockException
     
