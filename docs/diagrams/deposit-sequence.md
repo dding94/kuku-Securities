@@ -100,7 +100,7 @@ sequenceDiagram
 
     Note over S: 3. 잔고 조회 & 검증
     S->>BP: findByAccountId(accountId)
-    BP->>DB: SELECT * FROM balances
+    BP->>DB: SELECT * FROM balances WHERE account_id = ?
     DB-->>BP: Balance
     BP-->>S: Balance
 
