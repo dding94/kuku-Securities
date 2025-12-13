@@ -88,7 +88,7 @@ sequenceDiagram
     
     Note over S: 1. 멱등성 체크
     S->>TP: findByBusinessRefId(businessRefId)
-    TP->>DB: SELECT * FROM transactions
+    TP->>DB: SELECT * FROM transactions WHERE business_ref_id = ?
     DB-->>TP: null
     TP-->>S: Optional.empty()
 
