@@ -94,7 +94,7 @@ sequenceDiagram
 
     Note over S: 2. 계좌 검증
     S->>AP: findById(accountId)
-    AP->>DB: SELECT * FROM accounts
+    AP->>DB: SELECT * FROM accounts WHERE id = ?
     DB-->>AP: Account
     AP-->>S: Account
 
