@@ -257,7 +257,15 @@ application/
 - [ ] **REFACTOR**: 폴링 주기 및 배치 크기 최적화
 
 ### 구현 항목
-- [ ] `OutboxEventPublisher` 구현 (Scheduled 폴링)
+- [ ] `OutboxEventPublisher` 스케줄링 구현
+  - **방식**: Spring `@Scheduled` 사용 (비동기 처리 불필요, 단순 주기적 실행)
+  - **설정** (application.yml 에 외부화):
+    - `kuku.ledger.outbox.polling-interval-ms`: 2000 (2초)
+    - `kuku.ledger.outbox.batch-size`: 100
+  - **실패 처리**:
+    - Kafka 발행 실패 시 `retry_count` 증가 및 다음 폴링 때 재시도.
+    - `max_retries`(예: 5회) 초과 시 `status = FAILED` 로 변경하여 무한 루프 방지.
+    - Dead Letter Queue (DLQ) 개념을 DB 테이블 내 상태(`FAILED`)로 대체.
 - [ ] Kafka Producer 구현 (기본 구조)
 - [ ] 테스트용 Kafka Mock 또는 Testcontainers 활용
 
