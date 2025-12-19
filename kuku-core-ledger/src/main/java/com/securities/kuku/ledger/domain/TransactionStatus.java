@@ -7,11 +7,17 @@ public enum TransactionStatus {
     UNKNOWN;
 
     public boolean isConfirmed() {
-        return this == POSTED;
+        return switch (this) {
+            case POSTED -> true;
+            case PENDING, REVERSED, UNKNOWN -> false;
+        };
     }
 
     public boolean canBeReversed() {
-        return this == POSTED;
+        return switch (this) {
+            case POSTED -> true;
+            case PENDING, REVERSED, UNKNOWN -> false;
+        };
     }
 
     public boolean canTransitionTo(TransactionStatus target) {

@@ -5,10 +5,8 @@ import java.time.Instant;
 
 @Getter
 public class Transaction {
-    // 1. 상수
     private static final String REVERSAL_BUSINESS_REF_PREFIX = "reversal-";
 
-    // 2. 인스턴스 필드
     private final Long id;
     private final TransactionType type;
     private final String description;
@@ -17,7 +15,6 @@ public class Transaction {
     private final Long reversalOfTransactionId;
     private final Instant createdAt;
 
-    // 3. 생성자
     public Transaction(Long id, TransactionType type, String description, String businessRefId,
             TransactionStatus status, Long reversalOfTransactionId, Instant createdAt) {
 
@@ -45,7 +42,6 @@ public class Transaction {
         this.createdAt = createdAt;
     }
 
-    // 4. 정적 팩토리 메서드
     public static Transaction createDeposit(String description, String businessRefId, Instant now) {
         return new Transaction(
                 null,
@@ -79,17 +75,9 @@ public class Transaction {
                 now);
     }
 
-    // 5. 공개 메서드 (상태 전환)
     public Transaction toReversed() {
         validateCanBeReversed();
-        return new Transaction(
-                this.id,
-                this.type,
-                this.description,
-                this.businessRefId,
-                TransactionStatus.REVERSED,
-                this.reversalOfTransactionId,
-                this.createdAt);
+        return withStatus(TransactionStatus.REVERSED);
     }
 
     public Transaction markAsUnknown() {
@@ -97,14 +85,7 @@ public class Transaction {
             throw new InvalidTransactionStateException(
                     "Only PENDING transactions can be marked as UNKNOWN. Current status: " + this.status);
         }
-        return new Transaction(
-                this.id,
-                this.type,
-                this.description,
-                this.businessRefId,
-                TransactionStatus.UNKNOWN,
-                this.reversalOfTransactionId,
-                this.createdAt);
+        return withStatus(TransactionStatus.UNKNOWN);
     }
 
     public Transaction resolveUnknown(TransactionStatus targetStatus) {
@@ -116,17 +97,9 @@ public class Transaction {
             throw new InvalidTransactionStateException(
                     "Cannot transition from UNKNOWN to " + targetStatus);
         }
-        return new Transaction(
-                this.id,
-                this.type,
-                this.description,
-                this.businessRefId,
-                targetStatus,
-                this.reversalOfTransactionId,
-                this.createdAt);
+        return withStatus(targetStatus);
     }
 
-    // 6. 공개 메서드 (검증)
     public void validateCanBeReversed() {
         if (this.status == TransactionStatus.REVERSED) {
             throw new InvalidTransactionStateException(
@@ -140,9 +113,16 @@ public class Transaction {
             throw new InvalidTransactionStateException(
                     "Cannot reverse an UNKNOWN transaction. Resolve it first: " + this.id);
         }
-        if (!this.status.canBeReversed()) {
-            throw new InvalidTransactionStateException(
-                    "Transaction cannot be reversed. Status: " + this.status);
-        }
+    }
+
+    private Transaction withStatus(TransactionStatus newStatus) {
+        return new Transaction(
+                this.id,
+                this.type,
+                this.description,
+                this.businessRefId,
+                newStatus,
+                this.reversalOfTransactionId,
+                this.createdAt);
     }
 }

@@ -60,12 +60,30 @@ trigger: always_on
 *   **Comments**: 코드로 의도를 표현할 수 없을 때만 주석을 작성합니다. "무엇"이 아닌 "왜"를 설명합니다.
 *   **Abstraction Levels**: 코드를 작성할 때 추상화 레벨을 맞춥니다. 한 함수 안에서는 동일한 수준의 추상화만 존재해야 합니다. (SLAP: Single Level of Abstraction Principle)
 
-### Testing
+### Testing (테스트 코드 작성 규칙)
 *   **TDD (Test-Driven Development)**: 가능한 경우 테스트를 먼저 작성하고 구현합니다.
 *   **Coverage**: 도메인 로직에 대해서는 높은 테스트 커버리지를 유지합니다.
 *   **Test Pyramid**: Unit Test > Integration Test > E2E Test 비율을 유지합니다.
 *   **Deterministic Testing**: 테스트는 언제 실행해도 동일한 결과를 보장해야 합니다.
     *   `LocalDateTime.now()`, `Random` 등을 직접 사용하지 말고, **고정된 값(Fixed Value)**을 주입하거나 Mocking하여 테스트하세요.
+
+추가로 테스트 코드 작성 시 반드시 다음 규칙을 준수하세요.
+
+#### 1. 결정론적 테스트 (MANDATORY)
+- `Instant.now()`, `LocalDateTime.now()`, `Random` 등 비결정적 값을 **직접 호출 금지**
+- 반드시 `private static final Instant FIXED_TIME = Instant.parse("2025-01-01T03:00:00Z");` 형태의 **고정 상수** 사용
+
+#### 2. @Nested로 그룹화 (REQUIRED when test count > 5)
+테스트 메서드가 5개를 초과하면 반드시 `@Nested` 클래스로 논리 그룹화:
+- 생성자/팩토리 메서드 → `class ConstructorValidation` 또는 `class FactoryMethods`
+- 각 public 메서드 → `class MethodName` (e.g., `class ToReversed`)
+
+#### 3. @ParameterizedTest로 중복 제거 (REQUIRED when pattern repeats ≥ 3)
+동일 패턴의 테스트가 3개 이상이면 `@ParameterizedTest` + `@EnumSource` 사용:
+```java
+@ParameterizedTest
+@EnumSource(value = TransactionStatus.class, names = {"PENDING", "REVERSED", "UNKNOWN"})
+void throwsException_whenStatusIsNotPosted(TransactionStatus status) { ... }
 
 ---
 

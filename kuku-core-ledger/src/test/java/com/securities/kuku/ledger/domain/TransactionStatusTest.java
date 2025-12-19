@@ -44,15 +44,6 @@ class TransactionStatusTest {
         assertThat(TransactionStatus.UNKNOWN.canBeReversed()).isFalse();
     }
 
-    // ========== UNKNOWN 상태 테스트 (TDD RED Phase) ==========
-
-    @Test
-    @DisplayName("TransactionStatus는 UNKNOWN 상태를 포함한다")
-    void transactionStatus_hasUnknownState() {
-        assertThat(TransactionStatus.valueOf("UNKNOWN")).isEqualTo(TransactionStatus.UNKNOWN);
-        assertThat(TransactionStatus.values()).hasSize(4);
-    }
-
     @Test
     @DisplayName("UNKNOWN 상태는 확정된 트랜잭션이 아니다")
     void unknown_isNotConfirmed() {

@@ -57,11 +57,127 @@
 *   **Abstraction Levels**: 코드를 작성할 때 추상화 레벨을 맞춥니다. 한 함수 안에서는 동일한 수준의 추상화만 존재해야 합니다. (SLAP: Single Level of Abstraction Principle)
 
 ### Testing
+
+#### 기본 원칙
 *   **TDD (Test-Driven Development)**: 가능한 경우 테스트를 먼저 작성하고 구현합니다.
 *   **Coverage**: 도메인 로직에 대해서는 높은 테스트 커버리지를 유지합니다.
 *   **Test Pyramid**: Unit Test > Integration Test > E2E Test 비율을 유지합니다.
-*   **Deterministic Testing**: 테스트는 언제 실행해도 동일한 결과를 보장해야 합니다.
-    *   `LocalDateTime.now()`, `Random` 등을 직접 사용하지 말고, **고정된 값(Fixed Value)**을 주입하거나 Mocking하여 테스트하세요.
+
+#### 결정론적 테스트 (Deterministic Testing)
+테스트는 언제 실행해도 동일한 결과를 보장해야 합니다.
+*   `LocalDateTime.now()`, `Instant.now()`, `Random` 등을 직접 사용하지 말고, **고정된 값(Fixed Value)**을 주입하거나 Mocking하여 테스트하세요.
+
+```java
+// ✅ 권장: 고정 시간 상수 사용
+class TransactionTest {
+    private static final Instant FIXED_TIME = Instant.parse("2025-01-01T03:00:00Z");
+    
+    @Test
+    void createTransaction_success() {
+        Transaction tx = new Transaction(..., FIXED_TIME);
+        assertThat(tx.getCreatedAt()).isEqualTo(FIXED_TIME);
+    }
+}
+```
+
+#### 테스트 구조화 (@Nested)
+테스트가 많아지면 flat한 구조는 관리가 어렵습니다. **`@Nested`**를 사용하여 논리적 그룹으로 구조화합니다.
+
+```java
+// ❌ Anti-Pattern: Flat 구조
+class TransactionTest {
+    void createTransaction_throwsException_whenTypeIsNull() {}
+    void createTransaction_throwsException_whenStatusIsNull() {}
+    void toReversed_returnsNewTransaction() {}
+    void toReversed_throwsException_whenNotPosted() {}
+}
+
+// ✅ Best Practice: @Nested로 그룹화
+class TransactionTest {
+    @Nested
+    @DisplayName("생성자 유효성 검증")
+    class ConstructorValidation {
+        @Test void throwsException_whenTypeIsNull() {}
+        @Test void throwsException_whenStatusIsNull() {}
+    }
+    
+    @Nested
+    @DisplayName("toReversed() 메서드")
+    class ToReversed {
+        @Test void success_whenStatusIsPosted() {}
+        @Test void throwsException_whenStatusIsNotPosted() {}
+    }
+}
+```
+
+#### 파라미터화 테스트 (@ParameterizedTest)
+유사한 패턴의 테스트가 반복되면 **`@ParameterizedTest`**를 활용하여 중복을 제거합니다.
+
+```java
+// ❌ Anti-Pattern: 유사 테스트 반복
+@Test void toReversed_throwsException_whenStatusIsPending() {}
+@Test void toReversed_throwsException_whenStatusIsReversed() {}
+@Test void toReversed_throwsException_whenStatusIsUnknown() {}
+
+// ✅ Best Practice: @ParameterizedTest
+@ParameterizedTest
+@EnumSource(value = TransactionStatus.class, names = {"PENDING", "REVERSED", "UNKNOWN"})
+@DisplayName("POSTED가 아닌 상태는 역분개 불가")
+void throwsException_whenStatusIsNotPosted(TransactionStatus status) {
+    Transaction tx = createTransaction(status);
+    
+    assertThatThrownBy(tx::toReversed)
+        .isInstanceOf(InvalidTransactionStateException.class);
+}
+```
+
+#### 경계값 및 null 허용 테스트
+의도적으로 `null`을 허용하는 필드는 테스트로 문서화하여 **의도를 명확히** 합니다.
+
+```java
+@Test
+@DisplayName("description은 null을 허용한다")
+void allowsNullDescription() {
+    Transaction tx = new Transaction(1L, TransactionType.DEPOSIT, null, ...);
+    assertThat(tx.getDescription()).isNull();
+}
+```
+
+#### 테스트 메서드 네이밍 규칙
+일관된 네이밍 패턴을 사용합니다: **`methodName_expectedResult_condition`** 또는 **`expectedResult_condition`** (@Nested 내부)
+
+| 패턴 | 예시 |
+|------|------|
+| Top-level | `createTransaction_throwsException_whenTypeIsNull()` |
+| @Nested 내부 | `throwsException_whenTypeIsNull()` (메서드명은 클래스명에서 유추) |
+| 성공 케이스 | `success_whenAllFieldsValid()` |
+
+#### 테스트 헬퍼 메서드
+테스트 픽스처 생성 로직의 중복을 제거하기 위해 **헬퍼 메서드**를 사용합니다.
+
+```java
+class TransactionTest {
+    private static final Instant FIXED_TIME = Instant.parse("2025-01-01T03:00:00Z");
+
+    // 테스트 픽스처 헬퍼
+    private Transaction createTransaction(TransactionStatus status) {
+        return new Transaction(1L, TransactionType.DEPOSIT, "Test", "REF-001",
+                status, null, FIXED_TIME);
+    }
+}
+```
+
+#### AssertJ 사용
+가독성 높은 검증을 위해 **AssertJ**를 사용합니다.
+
+```java
+// ✅ 권장: AssertJ fluent assertions
+assertThat(result).isNotSameAs(original);
+assertThat(result.getStatus()).isEqualTo(TransactionStatus.REVERSED);
+assertThatThrownBy(() -> tx.toReversed())
+    .isInstanceOf(InvalidTransactionStateException.class)
+    .hasMessageContaining("PENDING");
+```
 
 ### Class Member Ordering (클래스 멤버 순서)
 
