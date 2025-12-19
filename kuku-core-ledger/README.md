@@ -108,6 +108,27 @@ flowchart TD
     *   `PENDING`: 생성되었으나 아직 확정되지 않음
     *   `POSTED`: 확정되어 잔액에 반영됨
     *   `REVERSED`: 역분개되어 무효화됨
+    *   `UNKNOWN`: 외부 시스템 Timeout, DB 커넥션 실패 등으로 상태 확인이 필요함
+
+> **Note**: `UNKNOWN` 상태는 불확실한 상황에서 트랜잭션을 임시로 표시하며, 수동으로 확인 후 `POSTED`로 해결해야 합니다. `UNKNOWN` 상태에서는 역분개(Reversal)가 불가능합니다.
+
+#### 상태 전이 규칙
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: 트랜잭션 생성
+    PENDING --> POSTED: 확정
+    PENDING --> UNKNOWN: markAsUnknown()
+    UNKNOWN --> POSTED: resolveUnknown()
+    POSTED --> REVERSED: toReversed()
+    REVERSED --> [*]
+```
+
+| 메서드 | 설명 |
+|--------|------|
+| `markAsUnknown()` | PENDING → UNKNOWN 전환. Timeout/Exception 발생 시 사용 |
+| `resolveUnknown(status)` | UNKNOWN → POSTED 전환. 수동 확인 후 해결 |
+| `toReversed()` | POSTED → REVERSED 전환. 역분개 처리 |
 
 #### 역분개(Reversal)란?
 

@@ -123,4 +123,78 @@ class TransactionTest {
                                 .isInstanceOf(InvalidTransactionStateException.class)
                                 .hasMessageContaining("Transaction is already reversed");
         }
+
+        @Test
+        @DisplayName("PENDING 상태의 트랜잭션을 UNKNOWN으로 전환할 수 있다")
+        void markAsUnknown_success_whenStatusIsPending() {
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
+                Transaction pending = new Transaction(1L, TransactionType.DEPOSIT, "Test", "REF-001",
+                                TransactionStatus.PENDING, null, fixedTime);
+
+                Transaction unknown = pending.markAsUnknown();
+
+                assertThat(unknown).isNotSameAs(pending);
+                assertThat(unknown.getStatus()).isEqualTo(TransactionStatus.UNKNOWN);
+                assertThat(unknown.getId()).isEqualTo(pending.getId());
+        }
+
+        @Test
+        @DisplayName("POSTED 상태의 트랜잭션은 UNKNOWN으로 전환할 수 없다")
+        void markAsUnknown_throwsException_whenStatusIsPosted() {
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
+                Transaction posted = new Transaction(1L, TransactionType.DEPOSIT, "Test", "REF-001",
+                                TransactionStatus.POSTED, null, fixedTime);
+
+                assertThatThrownBy(() -> posted.markAsUnknown())
+                                .isInstanceOf(InvalidTransactionStateException.class)
+                                .hasMessageContaining("PENDING");
+        }
+
+        @Test
+        @DisplayName("UNKNOWN 상태의 트랜잭션을 POSTED로 해결할 수 있다")
+        void resolveUnknown_success_toPosted() {
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
+                Transaction unknown = new Transaction(1L, TransactionType.DEPOSIT, "Test", "REF-001",
+                                TransactionStatus.UNKNOWN, null, fixedTime);
+
+                Transaction resolved = unknown.resolveUnknown(TransactionStatus.POSTED);
+
+                assertThat(resolved).isNotSameAs(unknown);
+                assertThat(resolved.getStatus()).isEqualTo(TransactionStatus.POSTED);
+        }
+
+        @Test
+        @DisplayName("UNKNOWN 상태는 REVERSED로 직접 해결할 수 없다")
+        void resolveUnknown_throwsException_toReversed() {
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
+                Transaction unknown = new Transaction(1L, TransactionType.DEPOSIT, "Test", "REF-001",
+                                TransactionStatus.UNKNOWN, null, fixedTime);
+
+                assertThatThrownBy(() -> unknown.resolveUnknown(TransactionStatus.REVERSED))
+                                .isInstanceOf(InvalidTransactionStateException.class);
+        }
+
+        @Test
+        @DisplayName("UNKNOWN 상태가 아닌 트랜잭션은 resolveUnknown을 호출할 수 없다")
+        void resolveUnknown_throwsException_whenStatusIsNotUnknown() {
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
+                Transaction pending = new Transaction(1L, TransactionType.DEPOSIT, "Test", "REF-001",
+                                TransactionStatus.PENDING, null, fixedTime);
+
+                assertThatThrownBy(() -> pending.resolveUnknown(TransactionStatus.POSTED))
+                                .isInstanceOf(InvalidTransactionStateException.class)
+                                .hasMessageContaining("UNKNOWN");
+        }
+
+        @Test
+        @DisplayName("UNKNOWN 상태의 트랜잭션은 역분개할 수 없다")
+        void toReversed_throwsException_whenStatusIsUnknown() {
+                Instant fixedTime = Instant.parse("2025-01-01T03:00:00Z");
+                Transaction unknown = new Transaction(1L, TransactionType.DEPOSIT, "Test", "REF-001",
+                                TransactionStatus.UNKNOWN, null, fixedTime);
+
+                assertThatThrownBy(() -> unknown.toReversed())
+                                .isInstanceOf(InvalidTransactionStateException.class)
+                                .hasMessageContaining("UNKNOWN");
+        }
 }

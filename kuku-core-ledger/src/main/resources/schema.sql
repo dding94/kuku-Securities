@@ -9,6 +9,12 @@ CREATE TABLE IF NOT EXISTS `accounts` (
     UNIQUE KEY `uk_account_number` (`account_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- transactions: 트랜잭션 테이블
+-- status 컬럼:
+--   PENDING  - 트랜잭션이 생성되었으나 아직 확정되지 않음
+--   POSTED   - 트랜잭션이 확정되어 잔액에 반영됨
+--   REVERSED - 역분개되어 무효화됨
+--   UNKNOWN  - 외부 시스템 Timeout 등으로 상태 확인이 필요함
 CREATE TABLE IF NOT EXISTS `transactions` (
     `id` BIGINT NOT NULL,
     `type` VARCHAR(50) NOT NULL,

@@ -5,8 +5,10 @@ import java.time.Instant;
 
 @Getter
 public class Transaction {
+    // 1. 상수
     private static final String REVERSAL_BUSINESS_REF_PREFIX = "reversal-";
 
+    // 2. 인스턴스 필드
     private final Long id;
     private final TransactionType type;
     private final String description;
@@ -15,6 +17,7 @@ public class Transaction {
     private final Long reversalOfTransactionId;
     private final Instant createdAt;
 
+    // 3. 생성자
     public Transaction(Long id, TransactionType type, String description, String businessRefId,
             TransactionStatus status, Long reversalOfTransactionId, Instant createdAt) {
 
@@ -42,6 +45,7 @@ public class Transaction {
         this.createdAt = createdAt;
     }
 
+    // 4. 정적 팩토리 메서드
     public static Transaction createDeposit(String description, String businessRefId, Instant now) {
         return new Transaction(
                 null,
@@ -64,6 +68,18 @@ public class Transaction {
                 now);
     }
 
+    public static Transaction createReversal(Long originalTransactionId, String reason, Instant now) {
+        return new Transaction(
+                null,
+                TransactionType.REVERSAL,
+                reason,
+                REVERSAL_BUSINESS_REF_PREFIX + originalTransactionId,
+                TransactionStatus.POSTED,
+                originalTransactionId,
+                now);
+    }
+
+    // 5. 공개 메서드 (상태 전환)
     public Transaction toReversed() {
         validateCanBeReversed();
         return new Transaction(
@@ -76,6 +92,41 @@ public class Transaction {
                 this.createdAt);
     }
 
+    public Transaction markAsUnknown() {
+        if (this.status != TransactionStatus.PENDING) {
+            throw new InvalidTransactionStateException(
+                    "Only PENDING transactions can be marked as UNKNOWN. Current status: " + this.status);
+        }
+        return new Transaction(
+                this.id,
+                this.type,
+                this.description,
+                this.businessRefId,
+                TransactionStatus.UNKNOWN,
+                this.reversalOfTransactionId,
+                this.createdAt);
+    }
+
+    public Transaction resolveUnknown(TransactionStatus targetStatus) {
+        if (this.status != TransactionStatus.UNKNOWN) {
+            throw new InvalidTransactionStateException(
+                    "Only UNKNOWN transactions can be resolved. Current status: " + this.status);
+        }
+        if (!this.status.canTransitionTo(targetStatus)) {
+            throw new InvalidTransactionStateException(
+                    "Cannot transition from UNKNOWN to " + targetStatus);
+        }
+        return new Transaction(
+                this.id,
+                this.type,
+                this.description,
+                this.businessRefId,
+                targetStatus,
+                this.reversalOfTransactionId,
+                this.createdAt);
+    }
+
+    // 6. 공개 메서드 (검증)
     public void validateCanBeReversed() {
         if (this.status == TransactionStatus.REVERSED) {
             throw new InvalidTransactionStateException(
@@ -85,20 +136,13 @@ public class Transaction {
             throw new InvalidTransactionStateException(
                     "Cannot reverse a PENDING transaction: " + this.id);
         }
+        if (this.status == TransactionStatus.UNKNOWN) {
+            throw new InvalidTransactionStateException(
+                    "Cannot reverse an UNKNOWN transaction. Resolve it first: " + this.id);
+        }
         if (!this.status.canBeReversed()) {
             throw new InvalidTransactionStateException(
                     "Transaction cannot be reversed. Status: " + this.status);
         }
-    }
-
-    public static Transaction createReversal(Long originalTransactionId, String reason, Instant now) {
-        return new Transaction(
-                null,
-                TransactionType.REVERSAL,
-                reason,
-                REVERSAL_BUSINESS_REF_PREFIX + originalTransactionId,
-                TransactionStatus.POSTED,
-                originalTransactionId,
-                now);
     }
 }

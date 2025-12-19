@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Global Development Policy & Guidelines
 
 이 문서는 프로젝트의 일관성, 유지보수성, 그리고 높은 품질을 유지하기 위한 글로벌 정책과 가이드라인을 정의합니다. 모든 기여자는 이 문서를 숙지하고 준수해야 합니다.
@@ -62,45 +66,6 @@
 *   **Test Pyramid**: Unit Test > Integration Test > E2E Test 비율을 유지합니다.
 *   **Deterministic Testing**: 테스트는 언제 실행해도 동일한 결과를 보장해야 합니다.
     *   `LocalDateTime.now()`, `Random` 등을 직접 사용하지 말고, **고정된 값(Fixed Value)**을 주입하거나 Mocking하여 테스트하세요.
-
-### Class Member Ordering (클래스 멤버 순서)
-
-클래스 내부 멤버는 다음 순서로 정렬합니다:
-
-1. **상수 (static final)**: `private static final`, `public static final`
-2. **정적 필드 (static)**: `private static`, `public static`
-3. **인스턴스 필드**: `private`, `protected`, `public`
-4. **생성자**: 기본 생성자, 파라미터 생성자 순
-5. **정적 팩토리 메서드**: `public static` (생성 관련)
-6. **공개 메서드 (public)**: 비즈니스 로직
-7. **패키지/보호된 메서드**: `protected`, package-private
-8. **비공개 메서드 (private)**: 내부 헬퍼 메서드
-
-```java
-public class Example {
-    // 1. 상수
-    private static final String CONSTANT = "value";
-
-    // 2. 정적 필드
-    private static int counter;
-
-    // 3. 인스턴스 필드
-    private final Long id;
-    private String name;
-
-    // 4. 생성자
-    public Example(Long id, String name) { ... }
-
-    // 5. 정적 팩토리 메서드
-    public static Example create(String name) { ... }
-
-    // 6. 공개 메서드
-    public void doSomething() { ... }
-
-    // 7. 비공개 메서드
-    private void validate() { ... }
-}
-```
 
 ---
 
@@ -237,3 +202,16 @@ Balance restoredBalance = entry.applyReverseTo(balance, txId, now);
 ### Switch Expression 사용 (Java 14+)
 *   Enum 분기에는 `if-else` 대신 **switch expression**을 사용합니다.
 *   모든 케이스를 커버하지 않으면 컴파일 에러가 발생하여 확장 시 안전합니다.
+
+### Class Member Ordering (클래스 멤버 순서)
+
+클래스 내부 멤버는 다음 순서로 정렬합니다:
+
+1. **상수 (static final)**: `private static final`, `public static final`
+2. **정적 필드 (static)**: `private static`, `public static`
+3. **인스턴스 필드**: `private`, `protected`, `public`
+4. **생성자**: 기본 생성자, 파라미터 생성자 순
+5. **정적 팩토리 메서드**: `public static` (생성 관련)
+6. **공개 메서드 (public)**: 비즈니스 로직
+7. **패키지/보호된 메서드**: `protected`, package-private
+8. **비공개 메서드 (private)**: 내부 헬퍼 메서드
