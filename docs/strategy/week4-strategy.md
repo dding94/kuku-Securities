@@ -10,27 +10,27 @@ PENDING/UNKNOWN 중간 상태를 구현하고, 동시성 테스트, 대량 데�
 > **목표.md 반영**: PENDING/UNKNOWN 중간 상태 정의 및 구현
 
 ### TDD Cycle
-- [ ] **RED**: TransactionStatus.UNKNOWN 테스트 작성
+- [x] **RED**: TransactionStatus.UNKNOWN 테스트 작성
   - UNKNOWN 상태 생성 가능 여부 테스트
   - UNKNOWN → POSTED 전환 가능 여부 테스트
   - UNKNOWN → REVERSED 전환 불가 테스트
-- [ ] **GREEN**: TransactionStatus에 UNKNOWN 추가 및 상태 전이 규칙 구현
-- [ ] **REFACTOR**: 상태 전이 로직을 Transaction 엔티티로 캡슐화
+- [x] **GREEN**: TransactionStatus에 UNKNOWN 추가 및 상태 전이 규칙 구현
+- [x] **REFACTOR**: 상태 전이 로직을 Transaction 엔티티로 캡슐화
 
 ### 구현 항목
-- [ ] `TransactionStatus.UNKNOWN` enum 값 추가
-- [ ] Unknown 상태 감지 기준 정의
+- [x] `TransactionStatus.UNKNOWN` enum 값 추가
+- [x] Unknown 상태 감지 기준 정의
   - Timeout (설정 가능한 임계값)
   - 외부 시스템 Exception
   - DB 커넥션 실패
-- [ ] `Transaction.markAsUnknown()` 메서드 구현
-- [ ] `Transaction.resolveUnknown(TransactionStatus)` 메서드 구현
-- [ ] schema.sql 업데이트 (UNKNOWN 상태 설명 주석)
+- [x] `Transaction.markAsUnknown()` 메서드 구현
+- [x] `Transaction.resolveUnknown(TransactionStatus)` 메서드 구현
+- [x] schema.sql 업데이트 (UNKNOWN 상태 설명 주석)
 
 ### 문서화
-- [ ] README.md 업데이트 (UNKNOWN 상태 설명 추가)
+- [x] README.md 업데이트 (UNKNOWN 상태 설명 추가)
 
-- [ ] PR 생성 및 머지
+- [x] PR 생성 및 머지
 
 ---
 

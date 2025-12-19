@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Global Development Policy & Guidelines
 
 이 문서는 프로젝트의 일관성, 유지보수성, 그리고 높은 품질을 유지하기 위한 글로벌 정책과 가이드라인을 정의합니다. 모든 기여자는 이 문서를 숙지하고 준수해야 합니다.
@@ -56,167 +60,30 @@
 *   **Comments**: 코드로 의도를 표현할 수 없을 때만 주석을 작성합니다. "무엇"이 아닌 "왜"를 설명합니다.
 *   **Abstraction Levels**: 코드를 작성할 때 추상화 레벨을 맞춥니다. 한 함수 안에서는 동일한 수준의 추상화만 존재해야 합니다. (SLAP: Single Level of Abstraction Principle)
 
-### Testing
-
-#### 기본 원칙
+### Testing (테스트 코드 작성 규칙)
 *   **TDD (Test-Driven Development)**: 가능한 경우 테스트를 먼저 작성하고 구현합니다.
 *   **Coverage**: 도메인 로직에 대해서는 높은 테스트 커버리지를 유지합니다.
 *   **Test Pyramid**: Unit Test > Integration Test > E2E Test 비율을 유지합니다.
+*   **Deterministic Testing**: 테스트는 언제 실행해도 동일한 결과를 보장해야 합니다.
+    *   `LocalDateTime.now()`, `Random` 등을 직접 사용하지 말고, **고정된 값(Fixed Value)**을 주입하거나 Mocking하여 테스트하세요.
 
-#### 결정론적 테스트 (Deterministic Testing)
-테스트는 언제 실행해도 동일한 결과를 보장해야 합니다.
-*   `LocalDateTime.now()`, `Instant.now()`, `Random` 등을 직접 사용하지 말고, **고정된 값(Fixed Value)**을 주입하거나 Mocking하여 테스트하세요.
+추가로 테스트 코드 작성 시 반드시 다음 규칙을 준수하세요.
 
+#### 1. 결정론적 테스트 (MANDATORY)
+- `Instant.now()`, `LocalDateTime.now()`, `Random` 등 비결정적 값을 **직접 호출 금지**
+- 반드시 `private static final Instant FIXED_TIME = Instant.parse("2025-01-01T03:00:00Z");` 형태의 **고정 상수** 사용
+
+#### 2. @Nested로 그룹화 (REQUIRED when test count > 5)
+테스트 메서드가 5개를 초과하면 반드시 `@Nested` 클래스로 논리 그룹화:
+- 생성자/팩토리 메서드 → `class ConstructorValidation` 또는 `class FactoryMethods`
+- 각 public 메서드 → `class MethodName` (e.g., `class ToReversed`)
+
+#### 3. @ParameterizedTest로 중복 제거 (REQUIRED when pattern repeats ≥ 3)
+동일 패턴의 테스트가 3개 이상이면 `@ParameterizedTest` + `@EnumSource` 사용:
 ```java
-// ✅ 권장: 고정 시간 상수 사용
-class TransactionTest {
-    private static final Instant FIXED_TIME = Instant.parse("2025-01-01T03:00:00Z");
-    
-    @Test
-    void createTransaction_success() {
-        Transaction tx = new Transaction(..., FIXED_TIME);
-        assertThat(tx.getCreatedAt()).isEqualTo(FIXED_TIME);
-    }
-}
-```
-
-#### 테스트 구조화 (@Nested)
-테스트가 많아지면 flat한 구조는 관리가 어렵습니다. **`@Nested`**를 사용하여 논리적 그룹으로 구조화합니다.
-
-```java
-// ❌ Anti-Pattern: Flat 구조
-class TransactionTest {
-    void createTransaction_throwsException_whenTypeIsNull() {}
-    void createTransaction_throwsException_whenStatusIsNull() {}
-    void toReversed_returnsNewTransaction() {}
-    void toReversed_throwsException_whenNotPosted() {}
-}
-
-// ✅ Best Practice: @Nested로 그룹화
-class TransactionTest {
-    @Nested
-    @DisplayName("생성자 유효성 검증")
-    class ConstructorValidation {
-        @Test void throwsException_whenTypeIsNull() {}
-        @Test void throwsException_whenStatusIsNull() {}
-    }
-    
-    @Nested
-    @DisplayName("toReversed() 메서드")
-    class ToReversed {
-        @Test void success_whenStatusIsPosted() {}
-        @Test void throwsException_whenStatusIsNotPosted() {}
-    }
-}
-```
-
-#### 파라미터화 테스트 (@ParameterizedTest)
-유사한 패턴의 테스트가 반복되면 **`@ParameterizedTest`**를 활용하여 중복을 제거합니다.
-
-```java
-// ❌ Anti-Pattern: 유사 테스트 반복
-@Test void toReversed_throwsException_whenStatusIsPending() {}
-@Test void toReversed_throwsException_whenStatusIsReversed() {}
-@Test void toReversed_throwsException_whenStatusIsUnknown() {}
-
-// ✅ Best Practice: @ParameterizedTest
 @ParameterizedTest
 @EnumSource(value = TransactionStatus.class, names = {"PENDING", "REVERSED", "UNKNOWN"})
-@DisplayName("POSTED가 아닌 상태는 역분개 불가")
-void throwsException_whenStatusIsNotPosted(TransactionStatus status) {
-    Transaction tx = createTransaction(status);
-    
-    assertThatThrownBy(tx::toReversed)
-        .isInstanceOf(InvalidTransactionStateException.class);
-}
-```
-
-#### 경계값 및 null 허용 테스트
-의도적으로 `null`을 허용하는 필드는 테스트로 문서화하여 **의도를 명확히** 합니다.
-
-```java
-@Test
-@DisplayName("description은 null을 허용한다")
-void allowsNullDescription() {
-    Transaction tx = new Transaction(1L, TransactionType.DEPOSIT, null, ...);
-    assertThat(tx.getDescription()).isNull();
-}
-```
-
-#### 테스트 메서드 네이밍 규칙
-일관된 네이밍 패턴을 사용합니다: **`methodName_expectedResult_condition`** 또는 **`expectedResult_condition`** (@Nested 내부)
-
-| 패턴 | 예시 |
-|------|------|
-| Top-level | `createTransaction_throwsException_whenTypeIsNull()` |
-| @Nested 내부 | `throwsException_whenTypeIsNull()` (메서드명은 클래스명에서 유추) |
-| 성공 케이스 | `success_whenAllFieldsValid()` |
-
-#### 테스트 헬퍼 메서드
-테스트 픽스처 생성 로직의 중복을 제거하기 위해 **헬퍼 메서드**를 사용합니다.
-
-```java
-class TransactionTest {
-    private static final Instant FIXED_TIME = Instant.parse("2025-01-01T03:00:00Z");
-
-    // 테스트 픽스처 헬퍼
-    private Transaction createTransaction(TransactionStatus status) {
-        return new Transaction(1L, TransactionType.DEPOSIT, "Test", "REF-001",
-                status, null, FIXED_TIME);
-    }
-}
-```
-
-#### AssertJ 사용
-가독성 높은 검증을 위해 **AssertJ**를 사용합니다.
-
-```java
-// ✅ 권장: AssertJ fluent assertions
-assertThat(result).isNotSameAs(original);
-assertThat(result.getStatus()).isEqualTo(TransactionStatus.REVERSED);
-assertThatThrownBy(() -> tx.toReversed())
-    .isInstanceOf(InvalidTransactionStateException.class)
-    .hasMessageContaining("PENDING");
-```
-
-### Class Member Ordering (클래스 멤버 순서)
-
-클래스 내부 멤버는 다음 순서로 정렬합니다:
-
-1. **상수 (static final)**: `private static final`, `public static final`
-2. **정적 필드 (static)**: `private static`, `public static`
-3. **인스턴스 필드**: `private`, `protected`, `public`
-4. **생성자**: 기본 생성자, 파라미터 생성자 순
-5. **정적 팩토리 메서드**: `public static` (생성 관련)
-6. **공개 메서드 (public)**: 비즈니스 로직
-7. **패키지/보호된 메서드**: `protected`, package-private
-8. **비공개 메서드 (private)**: 내부 헬퍼 메서드
-
-```java
-public class Example {
-    // 1. 상수
-    private static final String CONSTANT = "value";
-
-    // 2. 정적 필드
-    private static int counter;
-
-    // 3. 인스턴스 필드
-    private final Long id;
-    private String name;
-
-    // 4. 생성자
-    public Example(Long id, String name) { ... }
-
-    // 5. 정적 팩토리 메서드
-    public static Example create(String name) { ... }
-
-    // 6. 공개 메서드
-    public void doSomething() { ... }
-
-    // 7. 비공개 메서드
-    private void validate() { ... }
-}
-```
+void throwsException_whenStatusIsNotPosted(TransactionStatus status) { ... }
 
 ---
 
@@ -353,3 +220,16 @@ Balance restoredBalance = entry.applyReverseTo(balance, txId, now);
 ### Switch Expression 사용 (Java 14+)
 *   Enum 분기에는 `if-else` 대신 **switch expression**을 사용합니다.
 *   모든 케이스를 커버하지 않으면 컴파일 에러가 발생하여 확장 시 안전합니다.
+
+### Class Member Ordering (클래스 멤버 순서)
+
+클래스 내부 멤버는 다음 순서로 정렬합니다:
+
+1. **상수 (static final)**: `private static final`, `public static final`
+2. **정적 필드 (static)**: `private static`, `public static`
+3. **인스턴스 필드**: `private`, `protected`, `public`
+4. **생성자**: 기본 생성자, 파라미터 생성자 순
+5. **정적 팩토리 메서드**: `public static` (생성 관련)
+6. **공개 메서드 (public)**: 비즈니스 로직
+7. **패키지/보호된 메서드**: `protected`, package-private
+8. **비공개 메서드 (private)**: 내부 헬퍼 메서드

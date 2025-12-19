@@ -64,16 +64,40 @@ public class Transaction {
                 now);
     }
 
+    public static Transaction createReversal(Long originalTransactionId, String reason, Instant now) {
+        return new Transaction(
+                null,
+                TransactionType.REVERSAL,
+                reason,
+                REVERSAL_BUSINESS_REF_PREFIX + originalTransactionId,
+                TransactionStatus.POSTED,
+                originalTransactionId,
+                now);
+    }
+
     public Transaction toReversed() {
         validateCanBeReversed();
-        return new Transaction(
-                this.id,
-                this.type,
-                this.description,
-                this.businessRefId,
-                TransactionStatus.REVERSED,
-                this.reversalOfTransactionId,
-                this.createdAt);
+        return withStatus(TransactionStatus.REVERSED);
+    }
+
+    public Transaction markAsUnknown() {
+        if (this.status != TransactionStatus.PENDING) {
+            throw new InvalidTransactionStateException(
+                    "Only PENDING transactions can be marked as UNKNOWN. Current status: " + this.status);
+        }
+        return withStatus(TransactionStatus.UNKNOWN);
+    }
+
+    public Transaction resolveUnknown(TransactionStatus targetStatus) {
+        if (this.status != TransactionStatus.UNKNOWN) {
+            throw new InvalidTransactionStateException(
+                    "Only UNKNOWN transactions can be resolved. Current status: " + this.status);
+        }
+        if (!this.status.canTransitionTo(targetStatus)) {
+            throw new InvalidTransactionStateException(
+                    "Cannot transition from UNKNOWN to " + targetStatus);
+        }
+        return withStatus(targetStatus);
     }
 
     public void validateCanBeReversed() {
@@ -85,20 +109,20 @@ public class Transaction {
             throw new InvalidTransactionStateException(
                     "Cannot reverse a PENDING transaction: " + this.id);
         }
-        if (!this.status.canBeReversed()) {
+        if (this.status == TransactionStatus.UNKNOWN) {
             throw new InvalidTransactionStateException(
-                    "Transaction cannot be reversed. Status: " + this.status);
+                    "Cannot reverse an UNKNOWN transaction. Resolve it first: " + this.id);
         }
     }
 
-    public static Transaction createReversal(Long originalTransactionId, String reason, Instant now) {
+    private Transaction withStatus(TransactionStatus newStatus) {
         return new Transaction(
-                null,
-                TransactionType.REVERSAL,
-                reason,
-                REVERSAL_BUSINESS_REF_PREFIX + originalTransactionId,
-                TransactionStatus.POSTED,
-                originalTransactionId,
-                now);
+                this.id,
+                this.type,
+                this.description,
+                this.businessRefId,
+                newStatus,
+                this.reversalOfTransactionId,
+                this.createdAt);
     }
 }
