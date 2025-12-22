@@ -6,9 +6,9 @@ import java.util.List;
 
 public interface JournalEntryPort {
 
-    void save(JournalEntry journalEntry);
+  void save(JournalEntry journalEntry);
 
-    void saveAll(Collection<JournalEntry> journalEntries);
+  void saveAll(Collection<JournalEntry> journalEntries);
 
-    List<JournalEntry> findByTransactionId(Long transactionId);
+  List<JournalEntry> findByTransactionId(Long transactionId);
 }

@@ -5,11 +5,11 @@ import java.util.Optional;
 
 public interface TransactionPort {
 
-    Optional<Transaction> findById(Long transactionId);
+  Optional<Transaction> findById(Long transactionId);
 
-    Optional<Transaction> findByBusinessRefId(String businessRefId);
+  Optional<Transaction> findByBusinessRefId(String businessRefId);
 
-    Transaction save(Transaction transaction);
+  Transaction save(Transaction transaction);
 
-    void update(Transaction transaction);
+  void update(Transaction transaction);
 }

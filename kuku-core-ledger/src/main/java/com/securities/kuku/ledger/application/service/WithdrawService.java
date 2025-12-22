@@ -24,59 +24,66 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class WithdrawService implements WithdrawUseCase {
 
-    private final Clock clock;
-    private final AccountPort accountPort;
-    private final BalancePort balancePort;
-    private final TransactionPort transactionPort;
-    private final JournalEntryPort journalEntryPort;
+  private final Clock clock;
+  private final AccountPort accountPort;
+  private final BalancePort balancePort;
+  private final TransactionPort transactionPort;
+  private final JournalEntryPort journalEntryPort;
 
-    @Override
-    @Transactional
-    public void withdraw(WithdrawCommand command) {
-        // 1. Idempotency Check
-        if (isDuplicateTransaction(command.businessRefId())) {
-            log.warn("Duplicate transaction detected. businessRefId={}", command.businessRefId());
-            return;
-        }
-
-        // 2. Load Aggregates
-        Account account = accountPort.findById(command.accountId())
-                .orElseThrow(() -> new IllegalArgumentException("Account not found: " + command.accountId()));
-
-        Balance balance = balancePort.findByAccountId(command.accountId())
-                .orElseThrow(() -> new IllegalArgumentException("Balance not found: " + command.accountId()));
-
-        // Capture semantic time for this operation
-        Instant now = clock.instant();
-
-        // 3. Validate sufficient balance (fail-fast before any writes)
-        validateSufficientBalance(balance, command.amount());
-
-        // 4. Create & Save Transaction
-        Transaction transaction = Transaction.createWithdraw(command.description(), command.businessRefId(), now);
-        Transaction savedTransaction = transactionPort.save(transaction);
-
-        // 5. Create & Save Journal Entry
-        JournalEntry journalEntry = JournalEntry.createDebit(
-                savedTransaction.getId(),
-                account.getId(),
-                command.amount(),
-                now);
-        journalEntryPort.save(journalEntry);
-
-        // 6. Update Balance
-        Balance newBalance = balance.withdraw(command.amount(), savedTransaction.getId(), now);
-        balancePort.update(newBalance);
+  @Override
+  @Transactional
+  public void withdraw(WithdrawCommand command) {
+    // 1. Idempotency Check
+    if (isDuplicateTransaction(command.businessRefId())) {
+      log.warn("Duplicate transaction detected. businessRefId={}", command.businessRefId());
+      return;
     }
 
-    private void validateSufficientBalance(Balance balance, BigDecimal amount) {
-        if (amount.compareTo(balance.getAvailableAmount()) > 0) {
-            throw new InsufficientBalanceException(
-                    "Insufficient balance. Available: " + balance.getAvailableAmount() + ", Requested: " + amount);
-        }
-    }
+    // 2. Load Aggregates
+    Account account =
+        accountPort
+            .findById(command.accountId())
+            .orElseThrow(
+                () -> new IllegalArgumentException("Account not found: " + command.accountId()));
 
-    private boolean isDuplicateTransaction(String businessRefId) {
-        return transactionPort.findByBusinessRefId(businessRefId).isPresent();
+    Balance balance =
+        balancePort
+            .findByAccountId(command.accountId())
+            .orElseThrow(
+                () -> new IllegalArgumentException("Balance not found: " + command.accountId()));
+
+    // Capture semantic time for this operation
+    Instant now = clock.instant();
+
+    // 3. Validate sufficient balance (fail-fast before any writes)
+    validateSufficientBalance(balance, command.amount());
+
+    // 4. Create & Save Transaction
+    Transaction transaction =
+        Transaction.createWithdraw(command.description(), command.businessRefId(), now);
+    Transaction savedTransaction = transactionPort.save(transaction);
+
+    // 5. Create & Save Journal Entry
+    JournalEntry journalEntry =
+        JournalEntry.createDebit(savedTransaction.getId(), account.getId(), command.amount(), now);
+    journalEntryPort.save(journalEntry);
+
+    // 6. Update Balance
+    Balance newBalance = balance.withdraw(command.amount(), savedTransaction.getId(), now);
+    balancePort.update(newBalance);
+  }
+
+  private void validateSufficientBalance(Balance balance, BigDecimal amount) {
+    if (amount.compareTo(balance.getAvailableAmount()) > 0) {
+      throw new InsufficientBalanceException(
+          "Insufficient balance. Available: "
+              + balance.getAvailableAmount()
+              + ", Requested: "
+              + amount);
     }
+  }
+
+  private boolean isDuplicateTransaction(String businessRefId) {
+    return transactionPort.findByBusinessRefId(businessRefId).isPresent();
+  }
 }

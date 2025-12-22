@@ -8,11 +8,11 @@ import java.util.Set;
 
 public interface BalancePort {
 
-    Optional<Balance> findByAccountId(Long accountId);
+  Optional<Balance> findByAccountId(Long accountId);
 
-    Map<Long, Balance> findByAccountIds(Set<Long> accountIds);
+  Map<Long, Balance> findByAccountIds(Set<Long> accountIds);
 
-    void update(Balance balance);
+  void update(Balance balance);
 
-    void updateAll(Collection<Balance> balances);
+  void updateAll(Collection<Balance> balances);
 }
