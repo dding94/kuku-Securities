@@ -69,7 +69,7 @@ application/
     └── ConfirmTransactionService
 ```
 
-- [ ] PR 생성 및 머지
+- [x] PR 생성 및 머지
 
 ---
 
@@ -78,29 +78,29 @@ application/
 > **목표.md 반영**: 동시성 테스트 (동일 계좌 동시 입출금 시 정합성 검증)
 
 ### TDD Cycle
-- [ ] **RED**: 동일 계좌 동시 입금 테스트
+- [x] **RED**: 동일 계좌 동시 입금 테스트
   - Given: 잔액 0원, 10개 스레드가 각각 100원 입금
   - Then: 최종 잔액 1000원
-- [ ] **GREEN**: 동시성 제어 적용/검증
-- [ ] **REFACTOR**: 테스트 가독성 개선
+- [x] **GREEN**: 동시성 제어 적용/검증
+- [x] **REFACTOR**: 테스트 가독성 개선
 
-- [ ] **RED**: 동일 계좌 동시 입출금 혼합 테스트
+- [x] **RED**: 동일 계좌 동시 입출금 혼합 테스트
   - Given: 잔액 5000원, 5개 스레드 입금(100원), 5개 스레드 출금(100원)
   - Then: 최종 잔액 5000원
-- [ ] **GREEN**: Race Condition 없음 검증
-- [ ] **REFACTOR**: 테스트 유틸리티 추출
+- [x] **GREEN**: Race Condition 없음 검증
+- [x] **REFACTOR**: 테스트 유틸리티 추출
 
-- [ ] **RED**: Lost Update 방지 테스트
+- [x] **RED**: Lost Update 방지 테스트
   - Given: 동일 계좌에 연속적인 업데이트
   - Then: 모든 업데이트가 반영됨
-- [ ] **GREEN**: Optimistic Lock 정상 동작 검증
-- [ ] **REFACTOR**: 정리
+- [x] **GREEN**: Optimistic Lock 정상 동작 검증
+- [x] **REFACTOR**: 정리
 
 ### 테스트 도구
-- [ ] `CountDownLatch`, `ExecutorService` 활용
-- [ ] 동시성 테스트 헬퍼 클래스 생성 (`ConcurrencyTestHelper`)
+- [x] `CountDownLatch`, `ExecutorService` 활용
+- [x] 동시성 테스트 헬퍼 클래스 생성 (`ConcurrencyTestHelper`)
 
-- [ ] PR 생성 및 머지
+- [x] PR 생성 및 머지
 
 ---
 
