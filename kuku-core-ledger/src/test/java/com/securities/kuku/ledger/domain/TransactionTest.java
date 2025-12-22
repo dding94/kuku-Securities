@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -265,6 +266,77 @@ class TransactionTest {
                         assertThatThrownBy(() -> tx.resolveUnknown(TransactionStatus.POSTED))
                                         .isInstanceOf(InvalidTransactionStateException.class)
                                         .hasMessageContaining("UNKNOWN");
+                }
+        }
+
+        @Nested
+        @DisplayName("confirm() 메서드")
+        class Confirm {
+
+                @Test
+                @DisplayName("PENDING 상태의 트랜잭션을 POSTED로 확정한 새 인스턴스 반환")
+                void success_whenStatusIsPending() {
+                        Transaction pending = createTransaction(TransactionStatus.PENDING);
+
+                        Transaction confirmed = pending.confirm();
+
+                        assertThat(confirmed).isNotSameAs(pending);
+                        assertThat(confirmed.getStatus()).isEqualTo(TransactionStatus.POSTED);
+                        assertThat(confirmed.getId()).isEqualTo(pending.getId());
+                        assertThat(confirmed.getType()).isEqualTo(pending.getType());
+                        assertThat(confirmed.getCreatedAt()).isEqualTo(pending.getCreatedAt());
+                }
+
+                @ParameterizedTest
+                @EnumSource(value = TransactionStatus.class, names = { "POSTED", "REVERSED", "UNKNOWN" })
+                @DisplayName("PENDING이 아닌 상태는 confirm 불가")
+                void throwsException_whenStatusIsNotPending(TransactionStatus status) {
+                        Transaction tx = createTransaction(status);
+
+                        assertThatThrownBy(tx::confirm)
+                                        .isInstanceOf(InvalidTransactionStateException.class)
+                                        .hasMessageContaining("PENDING");
+                }
+        }
+
+        @Nested
+        @DisplayName("createJournalEntry() 메서드")
+        class CreateJournalEntry {
+
+                private static final Long ACCOUNT_ID = 100L;
+                private static final BigDecimal AMOUNT = new BigDecimal("1000");
+
+                @Test
+                @DisplayName("DEPOSIT 트랜잭션은 CREDIT JournalEntry를 생성한다")
+                void deposit_createsCreditEntry() {
+                        Transaction deposit = new Transaction(1L, TransactionType.DEPOSIT, "입금",
+                                        "REF-001", TransactionStatus.POSTED, null, FIXED_TIME);
+
+                        JournalEntry entry = deposit.createJournalEntry(ACCOUNT_ID, AMOUNT, FIXED_TIME);
+
+                        assertThat(entry.getEntryType()).isEqualTo(JournalEntry.EntryType.CREDIT);
+                }
+
+                @Test
+                @DisplayName("WITHDRAWAL 트랜잭션은 DEBIT JournalEntry를 생성한다")
+                void withdrawal_createsDebitEntry() {
+                        Transaction withdrawal = new Transaction(2L, TransactionType.WITHDRAWAL, "출금",
+                                        "REF-002", TransactionStatus.POSTED, null, FIXED_TIME);
+
+                        JournalEntry entry = withdrawal.createJournalEntry(ACCOUNT_ID, AMOUNT, FIXED_TIME);
+
+                        assertThat(entry.getEntryType()).isEqualTo(JournalEntry.EntryType.DEBIT);
+                }
+
+                @Test
+                @DisplayName("지원하지 않는 TransactionType은 예외를 발생시킨다")
+                void unsupportedType_throwsException() {
+                        Transaction reversal = new Transaction(3L, TransactionType.REVERSAL, "역분개",
+                                        "REF-003", TransactionStatus.POSTED, 1L, FIXED_TIME);
+
+                        assertThatThrownBy(() -> reversal.createJournalEntry(ACCOUNT_ID, AMOUNT, FIXED_TIME))
+                                        .isInstanceOf(IllegalArgumentException.class)
+                                        .hasMessageContaining("REVERSAL");
                 }
         }
 }

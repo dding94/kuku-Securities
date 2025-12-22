@@ -1,6 +1,7 @@
 package com.securities.kuku.ledger.domain;
 
 import lombok.Getter;
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Getter
@@ -78,6 +79,23 @@ public class Transaction {
     public Transaction toReversed() {
         validateCanBeReversed();
         return withStatus(TransactionStatus.REVERSED);
+    }
+
+    public Transaction confirm() {
+        if (this.status != TransactionStatus.PENDING) {
+            throw new InvalidTransactionStateException(
+                    "Only PENDING transactions can be confirmed. Current status: " + this.status);
+        }
+        return withStatus(TransactionStatus.POSTED);
+    }
+
+    public JournalEntry createJournalEntry(Long accountId, BigDecimal amount, Instant now) {
+        return switch (this.type) {
+            case DEPOSIT -> JournalEntry.createCredit(this.id, accountId, amount, now);
+            case WITHDRAWAL -> JournalEntry.createDebit(this.id, accountId, amount, now);
+            default -> throw new IllegalArgumentException(
+                    "Transaction type " + this.type + " cannot create journal entry via this flow");
+        };
     }
 
     public Transaction markAsUnknown() {
