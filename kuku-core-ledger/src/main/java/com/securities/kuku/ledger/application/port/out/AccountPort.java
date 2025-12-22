@@ -5,5 +5,5 @@ import java.util.Optional;
 
 public interface AccountPort {
 
-    Optional<Account> findById(Long accountId);
+  Optional<Account> findById(Long accountId);
 }
