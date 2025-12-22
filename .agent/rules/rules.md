@@ -85,6 +85,8 @@ trigger: always_on
 @EnumSource(value = TransactionStatus.class, names = {"PENDING", "REVERSED", "UNKNOWN"})
 void throwsException_whenStatusIsNotPosted(TransactionStatus status) { ... }
 
+#### 4. 한 가지 테스트에서는 한 가지 목적의 검증만 수행한다.
+
 ---
 
 ## 3. Design Principles (설계 원칙)

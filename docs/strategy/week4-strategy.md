@@ -39,23 +39,24 @@ PENDING/UNKNOWN 중간 상태를 구현하고, 동시성 테스트, 대량 데�
 > **목표.md 반영**: PENDING → POSTED 2단계 전환 로직 구현
 
 ### TDD Cycle
-- [ ] **RED**: 2단계 전환 성공 테스트 작성
+- [x] **RED**: 2단계 전환 성공 테스트 작성
   - Given: PENDING 상태의 Transaction
   - When: 외부 확인 완료 후 confirm 호출
   - Then: Transaction → POSTED, JournalEntry 적용, Balance 반영
-- [ ] **GREEN**: `ConfirmTransactionUseCase` 구현
-- [ ] **REFACTOR**: 기존 입금/출금 로직과 통합
+- [x] **GREEN**: `ConfirmTransactionUseCase` 구현
+- [x] **REFACTOR**: 기존 입금/출금 로직과 통합
 
 ### TDD Cycle (실패 케이스)
-- [ ] **RED**: PENDING 상태가 아닌 Transaction confirm 실패 테스트
-- [ ] **GREEN**: 상태 검증 로직 추가
-- [ ] **REFACTOR**: 예외 처리 일관성 확보
+- [x] **RED**: PENDING 상태가 아닌 Transaction confirm 실패 테스트
+- [x] **GREEN**: 상태 검증 로직 추가
+- [x] **REFACTOR**: 예외 처리 일관성 확보
 
 ### 구현 항목
-- [ ] `ConfirmTransactionUseCase` 인터페이스 생성
-- [ ] `ConfirmTransactionCommand` 생성
-- [ ] `ConfirmTransactionService` 구현
-- [ ] 기존 `DepositService`, `WithdrawService`에 PENDING 모드 옵션 추가 (Optional)
+- [x] `ConfirmTransactionUseCase` 인터페이스 생성
+- [x] `ConfirmTransactionCommand` 생성
+- [x] `ConfirmTransactionService` 구현
+- [ ] 기존 `DepositService`, `WithdrawService`에 PENDING 모드 옵션 추가  
+  → **Week 7 (Matching Engine 연동 시) 구현 예정** - 외부 체결 결과 대기 시나리오에서 필요
 
 ### Hexagonal Architecture 확장
 ```
