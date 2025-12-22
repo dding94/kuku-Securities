@@ -55,8 +55,8 @@ PENDING/UNKNOWN 중간 상태를 구현하고, 동시성 테스트, 대량 데�
 - [x] `ConfirmTransactionUseCase` 인터페이스 생성
 - [x] `ConfirmTransactionCommand` 생성
 - [x] `ConfirmTransactionService` 구현
-- [ ] 기존 `DepositService`, `WithdrawService`에 PENDING 모드 옵션 추가  
-  → **Week 7 (Matching Engine 연동 시) 구현 예정** - 외부 체결 결과 대기 시나리오에서 필요
+- [ ] 기존 `DepositService`, `WithdrawService`에 PENDING 모드 옵션 추가
+  > **Week 7 (Matching Engine 연동 시) 구현 예정** - 외부 체결 결과 대기 시나리오에서 필요
 
 ### Hexagonal Architecture 확장
 ```
