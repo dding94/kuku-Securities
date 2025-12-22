@@ -99,26 +99,24 @@ class LedgerConcurrencyTest {
             int withdrawThreads = 5;
             accountId = fixture.createAccountWithBalance(initialBalance);
 
-            // 성공 카운터
-            AtomicInteger depositSuccessCount = new AtomicInteger(0);
-            AtomicInteger withdrawSuccessCount = new AtomicInteger(0);
+            // 작업 분배를 위한 인덱스 (threadId 대신 결정론적 분배)
+            AtomicInteger taskIndex = new AtomicInteger(0);
 
             // When: 혼합 스레드 실행
             ExecutionResult result = ConcurrencyRunner.run(depositThreads + withdrawThreads, () -> {
+                int index = taskIndex.getAndIncrement();
                 long threadId = Thread.currentThread().threadId();
                 String businessRefId = fixture.generateBusinessRefId(accountId, threadId);
 
-                // 짝수 threadId는 입금, 홀수는 출금
-                if (threadId % 2 == 0) {
+                // 첫 5개는 입금, 나머지 5개는 출금 (결정론적 분배)
+                if (index < depositThreads) {
                     DepositCommand command = DepositCommand.of(
                             accountId, txAmount, "Mixed deposit", businessRefId);
                     depositService.deposit(command);
-                    depositSuccessCount.incrementAndGet();
                 } else {
                     WithdrawCommand command = WithdrawCommand.of(
                             accountId, txAmount, "Mixed withdraw", businessRefId);
                     withdrawService.withdraw(command);
-                    withdrawSuccessCount.incrementAndGet();
                 }
             }, ObjectOptimisticLockingFailureException.class, InsufficientBalanceException.class);
 
