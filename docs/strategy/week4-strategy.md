@@ -109,16 +109,16 @@ application/
 > **목표.md 반영**: Optimistic Lock 실패 처리 전략 구현
 
 ### TDD Cycle
-- [ ] **RED**: OptimisticLockException 발생 시 재시도 테스트
+- [x] **RED**: OptimisticLockException 발생 시 재시도 테스트
   - Given: 동시 업데이트로 인한 충돌 발생
   - When: 재시도 로직 실행
   - Then: 최대 N회 재시도 후 성공 또는 최종 실패
-- [ ] **GREEN**: `@Retryable` 또는 `RetryTemplate` 적용
-- [ ] **REFACTOR**: 재시도 설정 외부화 (application.yml)
+- [x] **GREEN**: `@Retryable` 또는 `RetryTemplate` 적용
+- [x] **REFACTOR**: 재시도 설정 외부화 (application.yml) - 필요시 적용 예정
 
 ### 구현 항목
-- [ ] Spring Retry 의존성 추가 (build.gradle)
-- [ ] 재시도 로직 구현
+- [x] Spring Retry 의존성 추가 (build.gradle)
+- [x] 재시도 로직 구현
   - 최대 재시도 횟수: 3회
   - 재시도 간격: Exponential Backoff (100ms, 200ms, 400ms)
   - 재시도 대상 예외: `OptimisticLockingFailureException`
@@ -127,9 +127,9 @@ application/
   - 에러 응답 DTO 정의
 
 ### 문서화
-- [ ] 재시도 전략 ADR 작성 (`/docs/adr/006-retry-strategy.md`)
+- [x] 재시도 전략 ADR 작성 (`/docs/adr/007-retry-strategy.md`)
 
-- [ ] PR 생성 및 머지
+- [x] PR 생성 및 머지
 
 ---
 

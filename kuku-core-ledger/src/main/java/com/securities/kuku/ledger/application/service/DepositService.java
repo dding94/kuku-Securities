@@ -14,6 +14,9 @@ import java.time.Clock;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +32,10 @@ public class DepositService implements DepositUseCase {
   private final JournalEntryPort journalEntryPort;
 
   @Override
+  @Retryable(
+      retryFor = ObjectOptimisticLockingFailureException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 100, multiplier = 2.0, maxDelay = 1000))
   @Transactional
   public void deposit(DepositCommand command) {
     // 1. Idempotency Check
