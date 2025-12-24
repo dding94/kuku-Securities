@@ -133,31 +133,19 @@ application/
 
 ---
 
-## PR 5: 대량 데이터 처리 성능 테스트 (~200 LOC)
+## ~~PR 5: 대량 데이터 처리 성능 테스트~~ → Week 12로 이관
 
-> **목표.md 반영**: 대량 데이터 처리 성능 테스트
-
-### 테스트 시나리오
-- [ ] 10,000건 Transaction 일괄 생성 성능 측정
-  - Batch Insert vs 개별 Insert 비교
-  - 목표: 1초 이내 완료
-- [ ] 100,000건 JournalEntry 조회 성능 측정
-  - 페이징 쿼리 성능 검증
-  - 인덱스 효율성 확인
-- [ ] 동일 계좌 1,000건 연속 트랜잭션 처리 성능
-  - Lock 경합 영향도 측정
-  - TPS(Transaction Per Second) 측정
-
-### 구현 항목
-- [ ] 성능 테스트 클래스 생성 (`LedgerPerformanceTest`)
-- [ ] 테스트 결과 로깅 및 리포트 생성
-- [ ] 병목 구간 식별 및 최적화 포인트 문서화
-
-### 인덱스 검토
-- [ ] 기존 인덱스 효율성 검토
-- [ ] 필요시 추가 인덱스 생성 (schema.sql 업데이트)
-
-- [ ] PR 생성 및 머지
+> [!NOTE]
+> **이관 사유**: 성능 테스트는 전체 시스템(주문→체결→원장→포지션)이 완성된 후 의미 있는 측정이 가능함.
+>
+> **Week 12 계획**:
+> - k6/nGrinder를 활용한 부하 테스트 (대량 데이터 생성/조회, 동시 요청 시나리오 포함)
+> - 성능 지표 측정 (TPS, Latency, P99)
+> - 병목 구간 분석 및 인덱스 최적화
+>
+> **Week 4 Resilience 테마에서 이미 검증된 항목**:
+> - ✅ 동시성 정합성 → PR 3 `LedgerConcurrencyTest`
+> - ✅ Optimistic Lock 재시도 → PR 4 `RetryIntegrationTest`
 
 ---
 
@@ -366,8 +354,8 @@ kuku-core-ledger/src/test/java/com/securities/kuku/ledger/
 │   └── OutboxEventPublisherTest                        # **NEW**
 ├── concurrency/                                         # **NEW**
 │   └── LedgerConcurrencyTest
-├── performance/                                         # **NEW**
-│   └── LedgerPerformanceTest
+├── performance/                                         # **Week 12로 이관**
+│   └── LedgerPerformanceTest                            # (k6/nGrinder 대체)
 └── resilience/                                          # **NEW**
     ├── DbLockScenarioTest
     └── KafkaDownScenarioTest
