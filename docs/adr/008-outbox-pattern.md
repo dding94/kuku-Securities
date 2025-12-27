@@ -332,7 +332,7 @@ WHERE status = 'PROCESSED'
   AND processed_at < DATE_SUB(NOW(), INTERVAL 7 DAY);
 ```
 *   **정리 이유:**
-    1.  **성능 유지**: Outbox 테이블은 빈번한 Insert/Sort가 발생하므로, 데이터가 비대해지면 인덱스 오버헤드(B-Tree 깊이 중가)로 전체 트랜잭션 성능이 저하됩니다.
+    1.  **성능 유지**: Outbox 테이블은 빈번한 Insert/Sort가 발생하므로, 데이터가 비대해지면 인덱스 오버헤드(B-Tree 깊이 증가)로 전체 트랜잭션 성능이 저하됩니다.
     2.  **역할 구분**: Outbox는 "영구 보관소"가 아닌 "발행 버퍼"입니다. 장기 보관 및 감사(Audit) 데이터는 별도의 Cold Storage나 Kafka Retention 정책으로 관리합니다.
     3.  **비용 효율**: 완료된 이벤트를 고비용의 트랜잭션 DB(SSD)에 보관하는 것은 낭비입니다.
 
