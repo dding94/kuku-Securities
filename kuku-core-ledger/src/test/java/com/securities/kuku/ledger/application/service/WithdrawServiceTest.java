@@ -41,6 +41,7 @@ class WithdrawServiceTest {
   private BalancePort balancePort;
   private TransactionPort transactionPort;
   private JournalEntryPort journalEntryPort;
+  private OutboxEventRecorder outboxEventRecorder;
 
   @BeforeEach
   void setUp() {
@@ -50,10 +51,16 @@ class WithdrawServiceTest {
     balancePort = mock(BalancePort.class);
     transactionPort = mock(TransactionPort.class);
     journalEntryPort = mock(JournalEntryPort.class);
+    outboxEventRecorder = mock(OutboxEventRecorder.class);
 
     sut =
         new WithdrawService(
-            fixedClock, accountPort, balancePort, transactionPort, journalEntryPort);
+            fixedClock,
+            accountPort,
+            balancePort,
+            transactionPort,
+            journalEntryPort,
+            outboxEventRecorder);
   }
 
   @Test

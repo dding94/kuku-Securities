@@ -11,6 +11,7 @@ import com.securities.kuku.ledger.domain.Balance;
 import com.securities.kuku.ledger.domain.InsufficientBalanceException;
 import com.securities.kuku.ledger.domain.JournalEntry;
 import com.securities.kuku.ledger.domain.Transaction;
+import com.securities.kuku.ledger.domain.TransactionType;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -32,6 +33,7 @@ public class WithdrawService implements WithdrawUseCase {
   private final BalancePort balancePort;
   private final TransactionPort transactionPort;
   private final JournalEntryPort journalEntryPort;
+  private final OutboxEventRecorder outboxEventRecorder;
 
   @Override
   @Retryable(
@@ -78,6 +80,11 @@ public class WithdrawService implements WithdrawUseCase {
     // 6. Update Balance
     Balance newBalance = balance.withdraw(command.amount(), savedTransaction.getId(), now);
     balancePort.update(newBalance);
+
+    // 7. Publish Domain Event
+    outboxEventRecorder.record(
+        savedTransaction.toPostedEvent(
+            command.accountId(), command.amount(), TransactionType.WITHDRAWAL));
   }
 
   private void validateSufficientBalance(Balance balance, BigDecimal amount) {

@@ -154,17 +154,17 @@ application/
 > **목표.md 반영**: Ledger 이벤트(Outbox + Kafka) 설계
 
 ### 도메인 이벤트 정의
-- [ ] `LedgerEvent` 인터페이스 정의
-- [ ] `LedgerPostedEvent` 구현
+- [x] `LedgerEvent` 인터페이스 정의
+- [x] `LedgerPostedEvent` 구현
   - transactionId
   - accountId
   - amount
   - transactionType
   - timestamp
-- [ ] `LedgerReversedEvent` 구현
+- [x] `LedgerReversedEvent` 구현
 
 ### Outbox 테이블 설계
-- [ ] `outbox_event` 테이블 스키마 설계
+- [x] `outbox_event` 테이블 스키마 설계
   ```sql
   CREATE TABLE outbox_event (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -179,24 +179,24 @@ application/
     INDEX idx_outbox_created (created_at)
   );
   ```
-- [ ] schema.sql 업데이트
+- [x] schema.sql 업데이트
 
 ### Outbox Port 정의
-- [ ] `OutboxEventPort` 인터페이스 생성
+- [x] `OutboxEventPort` 인터페이스 생성
   - save(OutboxEvent)
   - findPendingEvents(limit)
   - markAsProcessed(eventId)
 
 ### 서비스 통합
-- [ ] 기존 UseCase에 Outbox 이벤트 저장 로직 추가
+- [x] 기존 UseCase에 Outbox 이벤트 저장 로직 추가
   - DepositService: LedgerPostedEvent 저장
   - WithdrawService: LedgerPostedEvent 저장
   - ReversalService: LedgerReversedEvent 저장
 
 ### 문서화
-- [ ] **[Diagram]** Ledger 이벤트 흐름도 작성 (`/docs/diagrams/ledger-event-flow.md`)
+- [x] **[Diagram]** Ledger 이벤트 흐름도 작성 (`/docs/diagrams/ledger-event-flow.md`)
 
-- [ ] PR 생성 및 머지
+- [x] PR 생성 및 머지
 
 ---
 

@@ -32,6 +32,7 @@ public class ReversalService implements ReversalUseCase {
   private final TransactionPort transactionPort;
   private final JournalEntryPort journalEntryPort;
   private final BalancePort balancePort;
+  private final OutboxEventRecorder outboxEventRecorder;
 
   @Override
   @Retryable(
@@ -85,6 +86,10 @@ public class ReversalService implements ReversalUseCase {
     List<Balance> restoredBalances =
         restoreBalances(originalEntries, balanceMap, savedReversal.getId(), now);
     balancePort.updateAll(restoredBalances);
+
+    // 10. Publish Domain Event
+    outboxEventRecorder.record(
+        savedReversal.toReversedEvent(originalTransaction.getId(), command.reason()));
   }
 
   private void validateJournalEntriesExist(List<JournalEntry> entries, Long transactionId) {

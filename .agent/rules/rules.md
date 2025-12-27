@@ -99,6 +99,8 @@ void throwsException_whenStatusIsNotPosted(TransactionStatus status) { ... }
 *   **Ubiquitous Language (보편 언어)**: 기획자, 개발자, 도메인 전문가가 동일한 용어를 사용합니다.
 *   **Bounded Context**: 도메인의 경계를 명확히 하고, 각 컨텍스트 내에서 모델의 정합성을 유지합니다.
 
+### Domain Event 생성 원칙 (DDD & OOP)
+**핵심:** Aggregate Root가 자신의 Domain Event를 생성한다 (Tell, Don't Ask)
 ---
 
 ## 4. Architecture Overview (아키텍처)

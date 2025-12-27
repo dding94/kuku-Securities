@@ -10,6 +10,7 @@ import com.securities.kuku.ledger.domain.Account;
 import com.securities.kuku.ledger.domain.Balance;
 import com.securities.kuku.ledger.domain.JournalEntry;
 import com.securities.kuku.ledger.domain.Transaction;
+import com.securities.kuku.ledger.domain.TransactionType;
 import java.time.Clock;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class DepositService implements DepositUseCase {
   private final BalancePort balancePort;
   private final TransactionPort transactionPort;
   private final JournalEntryPort journalEntryPort;
+  private final OutboxEventRecorder outboxEventRecorder;
 
   @Override
   @Retryable(
@@ -73,6 +75,11 @@ public class DepositService implements DepositUseCase {
     // 5. Update Balance
     Balance newBalance = balance.deposit(command.amount(), savedTransaction.getId(), now);
     balancePort.update(newBalance);
+
+    // 6. Publish Domain Event
+    outboxEventRecorder.record(
+        savedTransaction.toPostedEvent(
+            command.accountId(), command.amount(), TransactionType.DEPOSIT));
   }
 
   private boolean isDuplicateTransaction(String businessRefId) {
