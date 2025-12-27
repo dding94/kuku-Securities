@@ -353,3 +353,99 @@ Balance restoredBalance = entry.applyReverseTo(balance, txId, now);
 ### Switch Expression 사용 (Java 14+)
 *   Enum 분기에는 `if-else` 대신 **switch expression**을 사용합니다.
 *   모든 케이스를 커버하지 않으면 컴파일 에러가 발생하여 확장 시 안전합니다.
+
+---
+
+## 7. Domain Event 생성 원칙 (DDD & OOP)
+
+### 기본 원칙: Tell, Don't Ask
+
+Domain Event는 **도메인 엔티티가 자신의 상태 변화를 표현**하는 책임을 가집니다. 서비스 레이어에서 엔티티의 내부 상태를 꺼내서(Ask) 조립하지 말고, 엔티티에게 이벤트 생성을 명령(Tell)합니다.
+
+### ❌ Anti-Pattern: 서비스에서 이벤트 조립
+
+```java
+// DepositService.java
+outboxEventRecorder.record(
+    LedgerPostedEvent.of(
+        savedTransaction.getId(),     // Ask - ID를 꺼냄
+        command.accountId(),
+        command.amount(),
+        TransactionType.DEPOSIT,
+        now                           // Ask - 시간을 다시 전달
+    )
+);
+```
+
+**문제점:**
+- 서비스가 Transaction의 내부 상태(`id`, `createdAt`)를 직접 접근
+- **캡슐화 위반**: `now`를 외부에서 다시 전달 (이미 Transaction이 `createdAt`을 알고 있음)
+- 서비스가 "이벤트를 어떻게 만드는지"까지 알아야 함 (SRP 위반)
+
+### ✅ Best Practice: 도메인 엔티티에서 이벤트 생성
+
+```java
+// Transaction.java (도메인 엔티티)
+public LedgerPostedEvent toPostedEvent(
+    Long accountId, 
+    BigDecimal amount, 
+    TransactionType transactionType) {
+    return LedgerPostedEvent.of(
+        this.id,          // 내부 상태 사용
+        accountId,
+        amount,
+        transactionType,
+        this.createdAt    // 내부 상태 사용
+    );
+}
+
+public LedgerReversedEvent toReversedEvent(
+    Long originalTransactionId, 
+    String reason) {
+    return LedgerReversedEvent.of(
+        this.id,
+        originalTransactionId,
+        reason,
+        this.createdAt
+    );
+}
+```
+
+**서비스 코드 (단순화):**
+```java
+// DepositService.java
+outboxEventRecorder.record(
+    savedTransaction.toPostedEvent(
+        command.accountId(),
+        command.amount(),
+        TransactionType.DEPOSIT
+    )
+);
+```
+
+### 장점
+
+| 관점 | 설명 |
+|------|------|
+| **캡슐화** | Transaction의 내부 상태(`id`, `createdAt`)를 외부에 노출하지 않음 |
+| **SRP** | 서비스는 "언제 발행하는지"만, Transaction은 "어떻게 만드는지"만 책임 |
+| **Tell, Don't Ask** | 서비스가 엔티티에게 "ID를 달라"고 묻는 대신 "이벤트를 만들어줘"라고 명령 |
+| **확장성** | 서비스가 많아져도 이벤트 생성 로직은 Transaction 한 곳에만 존재 |
+| **Ubiquitous Language** | `toPostedEvent()` 메서드명이 비즈니스 언어를 그대로 표현 |
+
+### 적용 가이드라인
+
+1. **이벤트는 Aggregate Root에서 생성**
+   - Transaction, Order, Account 등 Aggregate Root가 자신의 상태 변화를 이벤트로 표현
+
+2. **외부 컨텍스트는 파라미터로 전달**
+   - `accountId`, `amount` 등 이벤트에 필요하지만 엔티티 내부에 없는 정보는 파라미터로 받음
+   - 이는 Factory Method 패턴의 일종으로, "내가 만드는 이벤트에 필요한 재료를 달라"는 의미
+
+3. **메서드 네이밍**
+   - `to[EventName]()` 패턴 사용 (예: `toPostedEvent()`, `toReversedEvent()`)
+   - 비즈니스 언어를 그대로 반영
+
+4. **이벤트 발행은 서비스 트랜잭션 마지막에**
+   - 비즈니스 로직 완료 후 `outboxEventRecorder.record()` 호출
+   - 주석: `// Publish Domain Event` (명확한 의도 표현)

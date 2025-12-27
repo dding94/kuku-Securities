@@ -45,6 +45,7 @@ class ReversalServiceTest {
   private TransactionPort transactionPort;
   private JournalEntryPort journalEntryPort;
   private BalancePort balancePort;
+  private OutboxEventRecorder outboxEventRecorder;
 
   @BeforeEach
   void setUp() {
@@ -53,8 +54,11 @@ class ReversalServiceTest {
     transactionPort = mock(TransactionPort.class);
     journalEntryPort = mock(JournalEntryPort.class);
     balancePort = mock(BalancePort.class);
+    outboxEventRecorder = mock(OutboxEventRecorder.class);
 
-    sut = new ReversalService(fixedClock, transactionPort, journalEntryPort, balancePort);
+    sut =
+        new ReversalService(
+            fixedClock, transactionPort, journalEntryPort, balancePort, outboxEventRecorder);
   }
 
   @Test

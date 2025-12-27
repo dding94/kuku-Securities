@@ -49,3 +49,22 @@ CREATE TABLE IF NOT EXISTS `balances` (
     `updated_at` DATETIME(6) NOT NULL,
     PRIMARY KEY (`account_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- outbox_event: Outbox 패턴을 위한 이벤트 저장소
+-- status 컬럼:
+--   PENDING   - 발행 대기 중 (Kafka로 전송 전)
+--   PROCESSED - 발행 완료
+--   FAILED    - 최대 재시도 횟수 초과로 실패
+CREATE TABLE IF NOT EXISTS `outbox_event` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `aggregate_type` VARCHAR(50) NOT NULL COMMENT '집합체 타입 (예: TRANSACTION)',
+    `aggregate_id` BIGINT NOT NULL COMMENT '집합체 ID (예: transactionId)',
+    `event_type` VARCHAR(100) NOT NULL COMMENT '이벤트 타입 (예: LEDGER_POSTED)',
+    `payload` JSON NOT NULL COMMENT '직렬화된 이벤트 데이터',
+    `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    `retry_count` INT NOT NULL DEFAULT 0,
+    `created_at` DATETIME(6) NOT NULL,
+    `processed_at` DATETIME(6) NULL,
+    INDEX `idx_outbox_status_created` (`status`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
