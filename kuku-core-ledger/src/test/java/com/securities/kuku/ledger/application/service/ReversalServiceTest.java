@@ -18,6 +18,7 @@ import com.securities.kuku.ledger.domain.JournalEntry;
 import com.securities.kuku.ledger.domain.Transaction;
 import com.securities.kuku.ledger.domain.TransactionStatus;
 import com.securities.kuku.ledger.domain.TransactionType;
+import com.securities.kuku.ledger.domain.event.LedgerReversedEvent;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -38,6 +39,7 @@ class ReversalServiceTest {
   private static final Instant FIXED_TIME = Instant.parse("2025-12-09T15:00:00Z");
   private static final Long ORIGINAL_TX_ID = 100L;
   private static final Long ACCOUNT_ID = 1L;
+  private static final String DEFAULT_REASON = "취소 요청";
 
   private ReversalService sut;
   private Clock fixedClock;
@@ -62,10 +64,10 @@ class ReversalServiceTest {
   }
 
   @Test
-  @DisplayName("역분개 성공 시 원 트랜잭션이 REVERSED 상태로 변경되어야 한다")
-  void reverse_ShouldChangeOriginalTransactionToReversed() {
+  @DisplayName("성공 시 원 트랜잭션이 REVERSED 상태로 변경된다")
+  void success_changesOriginalTransactionToReversed() {
     // Given
-    ReversalCommand command = ReversalCommand.of(ORIGINAL_TX_ID, "취소 요청");
+    ReversalCommand command = createDefaultCommand();
     setupSuccessScenario();
 
     // When
@@ -78,10 +80,58 @@ class ReversalServiceTest {
   }
 
   @Test
-  @DisplayName("역분개 성공 시 역분개 트랜잭션이 생성되어야 한다")
-  void reverse_ShouldCreateReversalTransaction() {
+  @DisplayName("성공 시 Outbox에 LedgerReversedEvent가 기록된다")
+  void success_recordsOutboxEvent() {
     // Given
-    ReversalCommand command = ReversalCommand.of(ORIGINAL_TX_ID, "취소 요청");
+    ReversalCommand command = createDefaultCommand();
+    setupSuccessScenario();
+
+    // When
+    sut.reverse(command);
+
+    // Then
+    then(outboxEventRecorder).should().record(any(LedgerReversedEvent.class));
+  }
+
+  @Test
+  @DisplayName("성공 시 Outbox 이벤트에 올바른 originalTransactionId가 포함된다")
+  void success_recordsOutboxEventWithCorrectOriginalTransactionId() {
+    // Given
+    ReversalCommand command = createDefaultCommand();
+    setupSuccessScenario();
+
+    // When
+    sut.reverse(command);
+
+    // Then
+    ArgumentCaptor<LedgerReversedEvent> eventCaptor =
+        ArgumentCaptor.forClass(LedgerReversedEvent.class);
+    then(outboxEventRecorder).should().record(eventCaptor.capture());
+    assertThat(eventCaptor.getValue().originalTransactionId()).isEqualTo(ORIGINAL_TX_ID);
+  }
+
+  @Test
+  @DisplayName("성공 시 Outbox 이벤트에 올바른 사유가 포함된다")
+  void success_recordsOutboxEventWithCorrectReason() {
+    // Given
+    ReversalCommand command = createDefaultCommand();
+    setupSuccessScenario();
+
+    // When
+    sut.reverse(command);
+
+    // Then
+    ArgumentCaptor<LedgerReversedEvent> eventCaptor =
+        ArgumentCaptor.forClass(LedgerReversedEvent.class);
+    then(outboxEventRecorder).should().record(eventCaptor.capture());
+    assertThat(eventCaptor.getValue().reason()).isEqualTo(DEFAULT_REASON);
+  }
+
+  @Test
+  @DisplayName("성공 시 REVERSAL 타입의 트랜잭션이 생성된다")
+  void success_createsReversalTypeTransaction() {
+    // Given
+    ReversalCommand command = createDefaultCommand();
     setupSuccessScenario();
 
     // When
@@ -90,17 +140,31 @@ class ReversalServiceTest {
     // Then
     ArgumentCaptor<Transaction> txCaptor = ArgumentCaptor.forClass(Transaction.class);
     then(transactionPort).should().save(txCaptor.capture());
-    Transaction reversalTx = txCaptor.getValue();
-    assertThat(reversalTx.getType()).isEqualTo(TransactionType.REVERSAL);
-    assertThat(reversalTx.getReversalOfTransactionId()).isEqualTo(ORIGINAL_TX_ID);
+    assertThat(txCaptor.getValue().getType()).isEqualTo(TransactionType.REVERSAL);
   }
 
   @Test
-  @DisplayName("역분개 성공 시 반대 분개가 배치로 저장되어야 한다")
-  @SuppressWarnings("unchecked")
-  void reverse_ShouldCreateOppositeJournalEntriesInBatch() {
+  @DisplayName("성공 시 역분개 트랜잭션에 원 트랜잭션 ID가 저장된다")
+  void success_createsReversalTransactionWithOriginalId() {
     // Given
-    ReversalCommand command = ReversalCommand.of(ORIGINAL_TX_ID, "취소 요청");
+    ReversalCommand command = createDefaultCommand();
+    setupSuccessScenario();
+
+    // When
+    sut.reverse(command);
+
+    // Then
+    ArgumentCaptor<Transaction> txCaptor = ArgumentCaptor.forClass(Transaction.class);
+    then(transactionPort).should().save(txCaptor.capture());
+    assertThat(txCaptor.getValue().getReversalOfTransactionId()).isEqualTo(ORIGINAL_TX_ID);
+  }
+
+  @Test
+  @DisplayName("성공 시 반대 분개가 배치로 저장된다")
+  @SuppressWarnings("unchecked")
+  void success_createsOppositeJournalEntriesInBatch() {
+    // Given
+    ReversalCommand command = createDefaultCommand();
     setupSuccessScenario();
 
     // When
@@ -110,19 +174,34 @@ class ReversalServiceTest {
     ArgumentCaptor<Collection<JournalEntry>> journalCaptor =
         ArgumentCaptor.forClass(Collection.class);
     then(journalEntryPort).should().saveAll(journalCaptor.capture());
-    Collection<JournalEntry> savedEntries = journalCaptor.getValue();
-    assertThat(savedEntries).hasSize(1);
-    JournalEntry oppositeEntry = savedEntries.iterator().next();
-    // Original was CREDIT, opposite should be DEBIT
+    assertThat(journalCaptor.getValue()).hasSize(1);
+  }
+
+  @Test
+  @DisplayName("성공 시 원본 CREDIT 분개에 대해 DEBIT 역분개가 생성된다")
+  @SuppressWarnings("unchecked")
+  void success_createsDebitEntryForOriginalCredit() {
+    // Given
+    ReversalCommand command = createDefaultCommand();
+    setupSuccessScenario();
+
+    // When
+    sut.reverse(command);
+
+    // Then
+    ArgumentCaptor<Collection<JournalEntry>> journalCaptor =
+        ArgumentCaptor.forClass(Collection.class);
+    then(journalEntryPort).should().saveAll(journalCaptor.capture());
+    JournalEntry oppositeEntry = journalCaptor.getValue().iterator().next();
     assertThat(oppositeEntry.getEntryType()).isEqualTo(JournalEntry.EntryType.DEBIT);
   }
 
   @Test
-  @DisplayName("역분개 성공 시 잔액이 배치로 복구되어야 한다")
+  @DisplayName("성공 시 잔액이 배치로 복구된다")
   @SuppressWarnings("unchecked")
-  void reverse_ShouldRestoreBalancesInBatch() {
+  void success_restoresBalancesInBatch() {
     // Given
-    ReversalCommand command = ReversalCommand.of(ORIGINAL_TX_ID, "취소 요청");
+    ReversalCommand command = createDefaultCommand();
     setupSuccessScenario();
 
     // When
@@ -131,19 +210,35 @@ class ReversalServiceTest {
     // Then
     ArgumentCaptor<Collection<Balance>> balanceCaptor = ArgumentCaptor.forClass(Collection.class);
     then(balancePort).should().updateAll(balanceCaptor.capture());
-    Collection<Balance> updatedBalances = balanceCaptor.getValue();
-    assertThat(updatedBalances).hasSize(1);
+    assertThat(balanceCaptor.getValue()).hasSize(1);
+  }
+
+  @Test
+  @DisplayName("성공 시 잔액이 원래 값으로 복구된다")
+  @SuppressWarnings("unchecked")
+  void success_restoresBalanceToOriginalAmount() {
+    // Given
+    ReversalCommand command = createDefaultCommand();
+    setupSuccessScenario();
+
+    // When
+    sut.reverse(command);
+
+    // Then
+    ArgumentCaptor<Collection<Balance>> balanceCaptor = ArgumentCaptor.forClass(Collection.class);
+    then(balancePort).should().updateAll(balanceCaptor.capture());
+    Balance restoredBalance = balanceCaptor.getValue().iterator().next();
     // Original deposit of 1000, reverse should withdraw -> 1000 - 1000 = 0
-    Balance restoredBalance = updatedBalances.iterator().next();
     assertThat(restoredBalance.getAmount()).isEqualByComparingTo(BigDecimal.ZERO);
   }
 
   @Test
-  @DisplayName("존재하지 않는 트랜잭션 역분개 시 예외가 발생해야 한다")
-  void reverse_ShouldThrowException_WhenTransactionNotFound() {
+  @DisplayName("존재하지 않는 트랜잭션이면 예외가 발생한다")
+  void throwsException_whenTransactionNotFound() {
     // Given
-    ReversalCommand command = ReversalCommand.of(999L, "취소 요청");
-    given(transactionPort.findById(999L)).willReturn(Optional.empty());
+    Long nonExistentTxId = 999L;
+    ReversalCommand command = ReversalCommand.of(nonExistentTxId, DEFAULT_REASON);
+    given(transactionPort.findById(nonExistentTxId)).willReturn(Optional.empty());
 
     // When & Then
     assertThatThrownBy(() -> sut.reverse(command))
@@ -152,19 +247,11 @@ class ReversalServiceTest {
   }
 
   @Test
-  @DisplayName("이미 REVERSED된 트랜잭션 역분개 시 예외가 발생해야 한다")
-  void reverse_ShouldThrowException_WhenTransactionAlreadyReversed() {
+  @DisplayName("이미 REVERSED된 트랜잭션이면 예외가 발생한다")
+  void throwsException_whenTransactionAlreadyReversed() {
     // Given
-    ReversalCommand command = ReversalCommand.of(ORIGINAL_TX_ID, "취소 요청");
-    Transaction reversedTx =
-        new Transaction(
-            ORIGINAL_TX_ID,
-            TransactionType.DEPOSIT,
-            "입금",
-            "ref-123",
-            TransactionStatus.REVERSED,
-            null,
-            FIXED_TIME);
+    ReversalCommand command = createDefaultCommand();
+    Transaction reversedTx = createTransactionWithStatus(TransactionStatus.REVERSED);
     given(transactionPort.findById(ORIGINAL_TX_ID)).willReturn(Optional.of(reversedTx));
 
     // When & Then
@@ -174,19 +261,11 @@ class ReversalServiceTest {
   }
 
   @Test
-  @DisplayName("PENDING 상태 트랜잭션 역분개 시 예외가 발생해야 한다")
-  void reverse_ShouldThrowException_WhenTransactionIsPending() {
+  @DisplayName("PENDING 상태 트랜잭션이면 예외가 발생한다")
+  void throwsException_whenTransactionIsPending() {
     // Given
-    ReversalCommand command = ReversalCommand.of(ORIGINAL_TX_ID, "취소 요청");
-    Transaction pendingTx =
-        new Transaction(
-            ORIGINAL_TX_ID,
-            TransactionType.DEPOSIT,
-            "입금",
-            "ref-123",
-            TransactionStatus.PENDING,
-            null,
-            FIXED_TIME);
+    ReversalCommand command = createDefaultCommand();
+    Transaction pendingTx = createTransactionWithStatus(TransactionStatus.PENDING);
     given(transactionPort.findById(ORIGINAL_TX_ID)).willReturn(Optional.of(pendingTx));
 
     // When & Then
@@ -196,40 +275,47 @@ class ReversalServiceTest {
   }
 
   @Test
-  @DisplayName("분개 목록이 비어있으면 데이터 정합성 예외가 발생해야 한다")
-  void reverse_ShouldThrowException_WhenNoJournalEntries() {
+  @DisplayName("분개 목록이 비어있으면 데이터 정합성 예외가 발생한다")
+  void throwsException_whenNoJournalEntries() {
     // Given
-    ReversalCommand command = ReversalCommand.of(ORIGINAL_TX_ID, "취소 요청");
-    Transaction originalTx =
-        new Transaction(
-            ORIGINAL_TX_ID,
-            TransactionType.DEPOSIT,
-            "입금",
-            "ref-123",
-            TransactionStatus.POSTED,
-            null,
-            FIXED_TIME);
+    ReversalCommand command = createDefaultCommand();
+    Transaction originalTx = createTransactionWithStatus(TransactionStatus.POSTED);
     given(transactionPort.findById(ORIGINAL_TX_ID)).willReturn(Optional.of(originalTx));
     given(journalEntryPort.findByTransactionId(ORIGINAL_TX_ID)).willReturn(Collections.emptyList());
 
     // When & Then
     assertThatThrownBy(() -> sut.reverse(command))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("No journal entries found")
+        .hasMessageContaining("No journal entries found");
+  }
+
+  @Test
+  @DisplayName("분개 목록이 비어있으면 데이터 정합성 문제를 메시지에 포함한다")
+  void throwsException_withDataIntegrityMessage_whenNoJournalEntries() {
+    // Given
+    ReversalCommand command = createDefaultCommand();
+    Transaction originalTx = createTransactionWithStatus(TransactionStatus.POSTED);
+    given(transactionPort.findById(ORIGINAL_TX_ID)).willReturn(Optional.of(originalTx));
+    given(journalEntryPort.findByTransactionId(ORIGINAL_TX_ID)).willReturn(Collections.emptyList());
+
+    // When & Then
+    assertThatThrownBy(() -> sut.reverse(command))
+        .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Data integrity issue");
+  }
+
+  private ReversalCommand createDefaultCommand() {
+    return ReversalCommand.of(ORIGINAL_TX_ID, DEFAULT_REASON);
+  }
+
+  private Transaction createTransactionWithStatus(TransactionStatus status) {
+    return new Transaction(
+        ORIGINAL_TX_ID, TransactionType.DEPOSIT, "입금", "ref-123", status, null, FIXED_TIME);
   }
 
   private void setupSuccessScenario() {
     // Original POSTED DEPOSIT transaction
-    Transaction originalTx =
-        new Transaction(
-            ORIGINAL_TX_ID,
-            TransactionType.DEPOSIT,
-            "입금",
-            "ref-123",
-            TransactionStatus.POSTED,
-            null,
-            FIXED_TIME);
+    Transaction originalTx = createTransactionWithStatus(TransactionStatus.POSTED);
     given(transactionPort.findById(ORIGINAL_TX_ID)).willReturn(Optional.of(originalTx));
 
     // Original CREDIT journal entry (deposit)

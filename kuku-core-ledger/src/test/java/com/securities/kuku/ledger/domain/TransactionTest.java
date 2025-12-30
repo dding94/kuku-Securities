@@ -428,4 +428,138 @@ class TransactionTest {
           .hasMessageContaining("REVERSAL");
     }
   }
+
+  @Nested
+  @DisplayName("toPostedEvent() 메서드")
+  class ToPostedEvent {
+
+    @Test
+    @DisplayName("DEPOSIT 트랜잭션의 LedgerPostedEvent 생성 - 모든 필드 정확성")
+    void deposit_createsPostedEventWithCorrectFields() {
+      // Given
+      Transaction deposit =
+          new Transaction(
+              100L,
+              TransactionType.DEPOSIT,
+              "입금",
+              "DEP-001",
+              TransactionStatus.POSTED,
+              null,
+              FIXED_TIME);
+      Long accountId = 1L;
+      BigDecimal amount = new BigDecimal("1000");
+
+      // When
+      var event = deposit.toPostedEvent(accountId, amount, TransactionType.DEPOSIT);
+
+      // Then
+      assertThat(event.transactionId()).isEqualTo(100L);
+      assertThat(event.accountId()).isEqualTo(1L);
+      assertThat(event.amount()).isEqualByComparingTo(new BigDecimal("1000"));
+      assertThat(event.transactionType()).isEqualTo(TransactionType.DEPOSIT);
+      assertThat(event.occurredAt()).isEqualTo(FIXED_TIME);
+    }
+
+    @Test
+    @DisplayName("WITHDRAWAL 트랜잭션의 LedgerPostedEvent 생성")
+    void withdrawal_createsPostedEventWithCorrectType() {
+      // Given
+      Transaction withdrawal =
+          new Transaction(
+              200L,
+              TransactionType.WITHDRAWAL,
+              "출금",
+              "WDR-001",
+              TransactionStatus.POSTED,
+              null,
+              FIXED_TIME);
+      Long accountId = 2L;
+      BigDecimal amount = new BigDecimal("500");
+
+      // When
+      var event = withdrawal.toPostedEvent(accountId, amount, TransactionType.WITHDRAWAL);
+
+      // Then
+      assertThat(event.transactionId()).isEqualTo(200L);
+      assertThat(event.transactionType()).isEqualTo(TransactionType.WITHDRAWAL);
+      assertThat(event.amount()).isEqualByComparingTo(new BigDecimal("500"));
+    }
+
+    @Test
+    @DisplayName("트랜잭션 내부 상태(id, createdAt)를 이벤트에 올바르게 전달")
+    void usesInternalStateForEvent() {
+      // Given
+      Instant customTime = Instant.parse("2025-06-15T12:00:00Z");
+      Transaction tx =
+          new Transaction(
+              999L,
+              TransactionType.DEPOSIT,
+              "테스트",
+              "REF-999",
+              TransactionStatus.POSTED,
+              null,
+              customTime);
+
+      // When
+      var event = tx.toPostedEvent(10L, new BigDecimal("100"), TransactionType.DEPOSIT);
+
+      // Then - 내부 상태가 정확히 전달되는지 검증
+      assertThat(event.transactionId()).isEqualTo(999L);
+      assertThat(event.occurredAt()).isEqualTo(customTime);
+    }
+  }
+
+  @Nested
+  @DisplayName("toReversedEvent() 메서드")
+  class ToReversedEvent {
+
+    @Test
+    @DisplayName("역분개 이벤트 생성 - 모든 필드 정확성")
+    void createsReversedEventWithCorrectFields() {
+      // Given
+      Transaction reversal =
+          new Transaction(
+              300L,
+              TransactionType.REVERSAL,
+              "취소 사유",
+              "reversal-100",
+              TransactionStatus.POSTED,
+              100L,
+              FIXED_TIME);
+      Long originalTxId = 100L;
+      String reason = "고객 요청";
+
+      // When
+      var event = reversal.toReversedEvent(originalTxId, reason);
+
+      // Then
+      assertThat(event.reversalTransactionId()).isEqualTo(300L);
+      assertThat(event.originalTransactionId()).isEqualTo(100L);
+      assertThat(event.reason()).isEqualTo("고객 요청");
+      assertThat(event.occurredAt()).isEqualTo(FIXED_TIME);
+    }
+
+    @Test
+    @DisplayName("역분개 이벤트는 트랜잭션 내부 시간(createdAt)을 사용")
+    void usesTransactionCreatedAtForTimestamp() {
+      // Given
+      Instant reversalTime = Instant.parse("2025-12-01T10:30:00Z");
+      Transaction reversal =
+          new Transaction(
+              500L,
+              TransactionType.REVERSAL,
+              "역분개",
+              "reversal-200",
+              TransactionStatus.POSTED,
+              200L,
+              reversalTime);
+
+      // When
+      var event = reversal.toReversedEvent(200L, "시스템 오류");
+
+      // Then
+      assertThat(event.occurredAt()).isEqualTo(reversalTime);
+      assertThat(event.reversalTransactionId()).isEqualTo(500L);
+    }
+  }
 }
