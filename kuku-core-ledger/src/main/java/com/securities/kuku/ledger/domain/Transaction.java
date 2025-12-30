@@ -1,5 +1,7 @@
 package com.securities.kuku.ledger.domain;
 
+import com.securities.kuku.ledger.domain.event.LedgerPostedEvent;
+import com.securities.kuku.ledger.domain.event.LedgerReversedEvent;
 import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.Getter;
@@ -138,6 +140,15 @@ public class Transaction {
       throw new InvalidTransactionStateException(
           "Cannot reverse an UNKNOWN transaction. Resolve it first: " + this.id);
     }
+  }
+
+  public LedgerPostedEvent toPostedEvent(
+      Long accountId, BigDecimal amount, TransactionType transactionType) {
+    return LedgerPostedEvent.of(this.id, accountId, amount, transactionType, this.createdAt);
+  }
+
+  public LedgerReversedEvent toReversedEvent(Long originalTransactionId, String reason) {
+    return LedgerReversedEvent.of(this.id, originalTransactionId, reason, this.createdAt);
   }
 
   private Transaction withStatus(TransactionStatus newStatus) {
