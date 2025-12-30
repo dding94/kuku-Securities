@@ -376,6 +376,23 @@ class WithdrawServiceTest {
   }
 
   @Test
+  @DisplayName("중복 요청 시 Outbox 이벤트가 기록되지 않는다 (멱등성)")
+  void doesNotRecordOutboxEvent_whenDuplicateRequest() {
+    // Given
+    WithdrawCommand command = createDefaultCommand();
+    Transaction existingTx =
+        Transaction.createWithdraw("Existing", DEFAULT_BUSINESS_REF_ID, FIXED_TIME);
+    given(transactionPort.findByBusinessRefId(DEFAULT_BUSINESS_REF_ID))
+        .willReturn(Optional.of(existingTx));
+
+    // When
+    sut.withdraw(command);
+
+    // Then
+    then(outboxEventRecorder).shouldHaveNoInteractions();
+  }
+
+  @Test
   @DisplayName("holdAmount를 고려한 가용 잔액이 부족하면 예외가 발생한다")
   void throwsException_whenAvailableBalanceInsufficient() {
     // Given

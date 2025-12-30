@@ -302,6 +302,23 @@ class DepositServiceTest {
     then(journalEntryPort).shouldHaveNoInteractions();
   }
 
+  @Test
+  @DisplayName("이미 처리된 비즈니스 ID면 Outbox 이벤트가 기록되지 않는다 (멱등성)")
+  void doesNotRecordOutboxEvent_whenDuplicateRequest() {
+    // Given
+    DepositCommand command = createDefaultCommand();
+    Transaction existingTx =
+        Transaction.createDeposit("Existing", DEFAULT_BUSINESS_REF_ID, FIXED_TIME);
+    given(transactionPort.findByBusinessRefId(DEFAULT_BUSINESS_REF_ID))
+        .willReturn(Optional.of(existingTx));
+
+    // When
+    sut.deposit(command);
+
+    // Then
+    then(outboxEventRecorder).shouldHaveNoInteractions();
+  }
+
   private DepositCommand createDefaultCommand() {
     return createCommand(DEFAULT_ACCOUNT_ID, DEFAULT_DEPOSIT_AMOUNT, DEFAULT_BUSINESS_REF_ID);
   }
