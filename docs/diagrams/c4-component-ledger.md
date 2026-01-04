@@ -27,6 +27,7 @@ flowchart TB
             Controller["🌐 LedgerController\n(향후 구현)"]
             
             subgraph Persistence["Persistence Adapters"]
+                AccountAdapter["AccountPersistenceAdapter"]
                 TxAdapter["TransactionPersistenceAdapter"]
                 BalanceAdapter["BalancePersistenceAdapter"]
                 JournalAdapter["JournalEntryPersistenceAdapter"]
@@ -53,6 +54,7 @@ flowchart TB
             end
             
             subgraph OutPorts["Outbound Ports"]
+                AccountPort["AccountPort"]
                 TxPort["TransactionPort"]
                 BalancePort["BalancePort"]
                 JournalPort["JournalEntryPort"]
@@ -62,6 +64,7 @@ flowchart TB
         
         subgraph Domain["Domain Layer"]
             direction TB
+            Account["Account\n(계좌 정보)"]
             Transaction["Transaction\n(상태 전이)"]
             Balance["Balance\n(@Version)"]
             JournalEntry["JournalEntry\n(이중부기)"]
@@ -88,6 +91,7 @@ flowchart TB
     Services --> OutboxRecorder
     OutboxRecorder --> Events
     
+    AccountPort -.-> AccountAdapter
     TxPort -.-> TxAdapter
     BalancePort -.-> BalanceAdapter
     JournalPort -.-> JournalAdapter
@@ -102,9 +106,9 @@ flowchart TB
     classDef adapter fill:#f3e5f5,stroke:#4a148c
     classDef external fill:#fce4ec,stroke:#880e4f
     
-    class Transaction,Balance,JournalEntry,OutboxEvent,LedgerPosted,LedgerReversed domain
+    class Account,Transaction,Balance,JournalEntry,OutboxEvent,LedgerPosted,LedgerReversed domain
     class DepositSvc,WithdrawSvc,ReversalSvc,ConfirmSvc,OutboxRecorder,DepositUC,WithdrawUC,ReversalUC,ConfirmUC application
-    class TxAdapter,BalanceAdapter,JournalAdapter,OutboxAdapter,Controller adapter
+    class AccountAdapter,TxAdapter,BalanceAdapter,JournalAdapter,OutboxAdapter,Controller adapter
     class Client,MySQL,Kafka external
 ```
 
@@ -121,7 +125,7 @@ flowchart TB
 | **Balance** | 계좌 잔액 관리 | Optimistic Lock (@Version) |
 | **Account** | 계좌 정보 | USER_CASH, SYSTEM_FEE 등 |
 | **OutboxEvent** | Outbox 이벤트 | PENDING→PROCESSED 상태 관리 |
-| **LedgerEvent** | 도메인 이벤트 | LedgerPostedEvent, LedgerReversedEvent |
+| **Domain Events** | 도메인 이벤트 발행 | LedgerPostedEvent, LedgerReversedEvent |
 
 ### Application Layer
 
@@ -152,18 +156,18 @@ flowchart TB
 sequenceDiagram
     participant C as Controller
     participant S as DepositService
-    participant T as Transaction
-    participant J as JournalEntry
-    participant B as Balance
+    participant D as Domain
     participant O as OutboxRecorder
+    participant P as PersistenceAdapters
     participant DB as MySQL
 
     C->>S: deposit(command)
-    S->>T: create(POSTED)
-    S->>J: createEntries(DEBIT/CREDIT)
-    S->>B: deposit(amount)
+    S->>D: Transaction.create(POSTED)
+    S->>D: JournalEntry.createPair()
+    S->>D: Balance.deposit(amount)
     S->>O: record(LedgerPostedEvent)
-    S->>DB: saveAll()
+    S->>P: save(transaction, entries, balance, outboxEvent)
+    P->>DB: INSERT/UPDATE
     S-->>C: Transaction
 ```
 
