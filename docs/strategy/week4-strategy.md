@@ -200,68 +200,29 @@ application/
 
 ---
 
-## PR 7: 장애 시나리오 테스트 - DB Lock 경쟁 (~200 LOC)
+## ~~PR 7: 장애 시나리오 테스트 - DB Lock 경쟁~~ → Week 6으로 이관
 
-> **목표.md 반영**: DB Lock 경쟁 시나리오 테스트
-
-### 테스트 시나리오
-- [ ] **RED**: Deadlock 발생 시나리오 테스트
-  - Given: 두 트랜잭션이 서로 다른 순서로 락 획득 시도
-  - Then: Deadlock 감지 및 적절한 예외 처리
-- [ ] **GREEN**: Deadlock 방지 전략 구현
-- [ ] **REFACTOR**: 락 획득 순서 일관성 보장
-
-- [ ] **RED**: Lock Timeout 시나리오 테스트
-  - Given: 락 획득 대기 시간 초과
-  - Then: 적절한 예외 발생 및 UNKNOWN 상태 전환
-- [ ] **GREEN**: Lock Timeout 설정 및 예외 처리
-- [ ] **REFACTOR**: Timeout 설정 외부화
-
-### 구현 항목
-- [ ] Lock Timeout 설정 (application.yml)
-- [ ] Deadlock 감지 시 예외 처리 (`LockConflictException`)
-- [ ] 락 관련 메트릭 로깅
-
-- [ ] PR 생성 및 머지
+> [!NOTE]
+> **이관 사유**: Week 6 "동시성 제어 전략" 주차에서 극한 동시성 테스트와 함께 통합 실험 예정.
+>
+> **Week 6 계획**:
+> - Deadlock 발생 시나리오 테스트
+> - Lock Timeout 시나리오 테스트
+> - Redis 장애 시 DB Lock만으로 방어 가능한지 검증
+> - Optimistic Lock vs Pessimistic Lock vs Redis Distributed Lock 성능 비교
 
 ---
 
-## PR 8: 장애 시나리오 테스트 - Kafka 다운 시 Outbox 검증 (~250 LOC)
+## ~~PR 8: 장애 시나리오 테스트 - Kafka 다운 시 Outbox 검증~~ → Week 7으로 이관
 
-> **목표.md 반영**: Kafka 다운 시 Outbox 패턴 검증
-
-### 테스트 시나리오
-- [ ] **RED**: Kafka 다운 상태에서 트랜잭션 정상 완료 테스트
-  - Given: Kafka 연결 불가 상태
-  - When: 입금 트랜잭션 수행
-  - Then: Transaction POSTED, Outbox에 이벤트 저장, Kafka 발행은 보류
-- [ ] **GREEN**: Outbox 패턴 정상 동작 구현
-- [ ] **REFACTOR**: 분리 및 정리
-
-- [ ] **RED**: Kafka 복구 후 Outbox 이벤트 발행 테스트
-  - Given: Outbox에 PENDING 이벤트 존재
-  - When: Kafka 복구 후 폴링 실행
-  - Then: 모든 PENDING 이벤트 발행 및 PROCESSED로 전환
-- [ ] **GREEN**: Outbox 폴링 로직 구현
-- [ ] **REFACTOR**: 폴링 주기 및 배치 크기 최적화
-
-### 구현 항목
-- [ ] `OutboxEventPublisher` 스케줄링 구현
-  - **방식**: Spring `@Scheduled` 사용 (비동기 처리 불필요, 단순 주기적 실행)
-  - **설정** (application.yml 에 외부화):
-    - `kuku.ledger.outbox.polling-interval-ms`: 2000 (2초)
-    - `kuku.ledger.outbox.batch-size`: 100
-  - **실패 처리**:
-    - Kafka 발행 실패 시 `retry_count` 증가 및 다음 폴링 때 재시도.
-    - `max_retries`(예: 5회) 초과 시 `status = FAILED` 로 변경하여 무한 루프 방지.
-    - Dead Letter Queue (DLQ) 개념을 DB 테이블 내 상태(`FAILED`)로 대체.
-- [ ] Kafka Producer 구현 (기본 구조)
-- [ ] 테스트용 Kafka Mock 또는 Testcontainers 활용
-
-### 문서화
-- [ ] Outbox 패턴 ADR 작성 (`/docs/adr/007-outbox-pattern.md`)
-
-- [ ] PR 생성 및 머지
+> [!NOTE]
+> **이관 사유**: Kafka 연동은 Week 7에서 E2E 플로우(주문→체결→원장)와 함께 구현해야 의미 있음.
+>
+> **Week 7 계획**:
+> - Outbox → Kafka Producer → Consumer 연결
+> - LedgerPostedEvent 발행
+> - Kafka 다운 시 Outbox 패턴 검증
+> - Testcontainers (Kafka) 활용 통합 테스트
 
 ---
 
@@ -292,74 +253,107 @@ application/
 
 ---
 
-## Hexagonal Architecture 패키지 구조 (Week 4 확장)
+## Hexagonal Architecture 패키지 구조 (Week 4 최종)
 
-> Week 3 구조에서 확장된 부분을 표시 (**NEW**)
+> 실제 구현된 구조 (Week 4 완료 시점)
 
 ```
 kuku-core-ledger/src/main/java/com/securities/kuku/ledger/
+├── LedgerApplication.java
 ├── domain/
-│   ├── Account, Transaction, JournalEntry, Balance
-│   ├── AccountType, TransactionType, TransactionStatus
-│   ├── InvalidTransactionStateException, InsufficientBalanceException
-│   ├── LockConflictException                           # **NEW**
-│   └── event/                                           # **NEW**
-│       ├── LedgerEvent
-│       ├── LedgerPostedEvent
-│       └── LedgerReversedEvent
+│   ├── Account.java
+│   ├── AccountType.java
+│   ├── Balance.java
+│   ├── Transaction.java
+│   ├── TransactionStatus.java
+│   ├── TransactionType.java
+│   ├── JournalEntry.java
+│   ├── OutboxEvent.java
+│   ├── OutboxEventStatus.java
+│   ├── InsufficientBalanceException.java
+│   ├── InvalidTransactionStateException.java
+│   └── event/
+│       ├── LedgerEvent.java
+│       ├── LedgerPostedEvent.java
+│       └── LedgerReversedEvent.java
 ├── application/
 │   ├── port/
 │   │   ├── in/
-│   │   │   ├── DepositUseCase, WithdrawUseCase, ReversalUseCase
-│   │   │   ├── ConfirmTransactionUseCase               # **NEW**
+│   │   │   ├── DepositUseCase.java
+│   │   │   ├── WithdrawUseCase.java
+│   │   │   ├── ReversalUseCase.java
+│   │   │   ├── ConfirmTransactionUseCase.java
 │   │   │   └── command/
-│   │   │       ├── DepositCommand, WithdrawCommand, ReversalCommand
-│   │   │       └── ConfirmTransactionCommand           # **NEW**
+│   │   │       ├── DepositCommand.java
+│   │   │       ├── WithdrawCommand.java
+│   │   │       ├── ReversalCommand.java
+│   │   │       └── ConfirmTransactionCommand.java
 │   │   └── out/
-│   │       ├── TransactionPort, AccountPort, BalancePort, JournalEntryPort
-│   │       └── OutboxEventPort                         # **NEW**
+│   │       ├── AccountPort.java
+│   │       ├── BalancePort.java
+│   │       ├── TransactionPort.java
+│   │       ├── JournalEntryPort.java
+│   │       └── OutboxEventPort.java
 │   └── service/
-│       ├── DepositService, WithdrawService, ReversalService
-│       └── ConfirmTransactionService                   # **NEW**
+│       ├── DepositService.java
+│       ├── WithdrawService.java
+│       ├── ReversalService.java
+│       ├── ConfirmTransactionService.java
+│       └── OutboxEventRecorder.java
 ├── adapter/
-│   ├── in/web/
-│   │   └── LedgerController (향후)
 │   └── out/
-│       ├── persistence/
-│       │   ├── JpaTransactionAdapter
-│       │   ├── JpaAccountAdapter
-│       │   ├── JpaBalanceAdapter
-│       │   ├── JpaJournalEntryAdapter
-│       │   └── JpaOutboxEventAdapter                   # **NEW**
-│       └── messaging/
-│           └── KafkaOutboxPublisher                    # **NEW**
+│       └── persistence/
+│           ├── AccountJpaRepository.java
+│           ├── AccountPersistenceAdapter.java
+│           ├── BalanceJpaRepository.java
+│           ├── BalancePersistenceAdapter.java
+│           ├── TransactionJpaRepository.java
+│           ├── TransactionPersistenceAdapter.java
+│           ├── JournalEntryJpaRepository.java
+│           ├── JournalEntryPersistenceAdapter.java
+│           ├── OutboxEventJpaRepository.java
+│           ├── OutboxEventPersistenceAdapter.java
+│           └── entity/
+│               ├── AccountEntity.java
+│               ├── BalanceEntity.java
+│               ├── TransactionEntity.java
+│               ├── JournalEntryEntity.java
+│               └── OutboxEventEntity.java
 └── config/
-    └── RetryConfig                                     # **NEW**
+    ├── RetryConfig.java
+    └── ClockConfig.java
 ```
+
+> [!NOTE]
+> **Week 7 구현 예정**: `adapter/in/web/` (LedgerController), `adapter/out/messaging/` (KafkaOutboxPublisher)
 
 ---
 
-## 테스트 파일 구조 (Week 4 확장)
+## 테스트 파일 구조 (Week 4 최종)
 
 ```
 kuku-core-ledger/src/test/java/com/securities/kuku/ledger/
 ├── domain/
-│   ├── AccountTest, TransactionTest, JournalEntryTest, BalanceTest
-│   ├── TransactionStatusTest
-│   └── event/                                          # **NEW**
-│       └── LedgerEventTest
+│   ├── AccountTest.java
+│   ├── BalanceTest.java
+│   ├── JournalEntryTest.java
+│   ├── TransactionTest.java
+│   ├── TransactionStatusTest.java
+│   └── TransactionTypeTest.java
 ├── application/service/
-│   ├── DepositServiceTest, WithdrawServiceTest, ReversalServiceTest
-│   ├── ConfirmTransactionServiceTest                   # **NEW**
-│   └── OutboxEventPublisherTest                        # **NEW**
-├── concurrency/                                         # **NEW**
-│   └── LedgerConcurrencyTest
-├── performance/                                         # **Week 12로 이관**
-│   └── LedgerPerformanceTest                            # (k6/nGrinder 대체)
-└── resilience/                                          # **NEW**
-    ├── DbLockScenarioTest
-    └── KafkaDownScenarioTest
+│   ├── DepositServiceTest.java
+│   ├── WithdrawServiceTest.java
+│   ├── ReversalServiceTest.java
+│   └── ConfirmTransactionServiceTest.java
+├── concurrency/
+│   └── LedgerConcurrencyTest.java
+└── resilience/
+    └── RetryIntegrationTest.java
 ```
+
+> [!NOTE]
+> **Week 6 구현 예정**: `DbLockScenarioTest` (Deadlock, Lock Timeout 시나리오)
+> **Week 7 구현 예정**: `KafkaDownScenarioTest` (Outbox 검증)
 
 ---
 
