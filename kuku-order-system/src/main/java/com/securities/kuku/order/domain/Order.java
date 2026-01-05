@@ -110,9 +110,8 @@ public class Order {
   }
 
   public Order validate(Instant now) {
-    if (this.status != OrderStatus.CREATED) {
-      throw new InvalidOrderStateException(
-          "Only CREATED orders can be validated. Current status: " + this.status);
+    if (!this.status.canTransitionTo(OrderStatus.VALIDATED)) {
+      throw new InvalidOrderStateException("Cannot validate order in " + this.status + " status");
     }
     return withStatusAndTime(OrderStatus.VALIDATED, now);
   }
@@ -142,9 +141,8 @@ public class Order {
   }
 
   public Order fill(BigDecimal executedPrice, BigDecimal executedQuantity, Instant now) {
-    if (this.status != OrderStatus.VALIDATED) {
-      throw new InvalidOrderStateException(
-          "Only VALIDATED orders can be filled. Current status: " + this.status);
+    if (!this.status.canTransitionTo(OrderStatus.FILLED)) {
+      throw new InvalidOrderStateException("Cannot fill order in " + this.status + " status");
     }
     if (executedPrice == null || executedPrice.compareTo(BigDecimal.ZERO) <= 0) {
       throw new IllegalArgumentException("ExecutedPrice must be greater than zero");
@@ -170,9 +168,8 @@ public class Order {
   }
 
   public Order cancel(Instant now) {
-    if (this.status != OrderStatus.VALIDATED) {
-      throw new InvalidOrderStateException(
-          "Only VALIDATED orders can be cancelled. Current status: " + this.status);
+    if (!this.status.canTransitionTo(OrderStatus.CANCELLED)) {
+      throw new InvalidOrderStateException("Cannot cancel order in " + this.status + " status");
     }
     return withStatusAndTime(OrderStatus.CANCELLED, now);
   }

@@ -292,7 +292,7 @@ class OrderTest {
 
       assertThatThrownBy(() -> order.validate(UPDATED_TIME))
           .isInstanceOf(InvalidOrderStateException.class)
-          .hasMessageContaining("CREATED");
+          .hasMessageContaining(status.name());
     }
   }
 
@@ -398,7 +398,7 @@ class OrderTest {
 
       assertThatThrownBy(() -> order.fill(EXECUTED_PRICE, EXECUTED_QUANTITY, UPDATED_TIME))
           .isInstanceOf(InvalidOrderStateException.class)
-          .hasMessageContaining("VALIDATED");
+          .hasMessageContaining(status.name());
     }
   }
 
@@ -428,7 +428,7 @@ class OrderTest {
 
       assertThatThrownBy(() -> order.cancel(UPDATED_TIME))
           .isInstanceOf(InvalidOrderStateException.class)
-          .hasMessageContaining("VALIDATED");
+          .hasMessageContaining(status.name());
     }
   }
 }
