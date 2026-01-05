@@ -231,25 +231,25 @@ application/
 > **목표.md 반영**: C4 Component Diagram (Ledger 내부 구조) 작성
 
 ### 다이어그램 작성
-- [ ] **[Diagram]** C4 Component Diagram 작성 (`/docs/diagrams/c4-component-ledger.md`)
+- [x] **[Diagram]** C4 Component Diagram 작성 (`/docs/diagrams/c4-component-ledger.md`)
   - Domain Layer 컴포넌트
   - Application Layer 컴포넌트 (UseCases)
   - Adapter Layer 컴포넌트 (Web, Persistence)
   - 외부 시스템 연결 (Kafka, MySQL)
 
 ### 문서 정리
-- [ ] Week 4 작업 내용 README.md 반영
-- [ ] 기존 다이어그램과의 일관성 검토
+- [x] Week 4 작업 내용 README.md 반영
+- [x] 기존 다이어그램과의 일관성 검토
 
 ### 회고
-- [ ] Week 4 회고 작성 (`/docs/retrospectives/week-04.md`)
+- [x] Week 4 회고 작성 (`/docs/retrospectives/week-04.md`)
   - 🎯 이번 주 목표 달성도
   - ✅ 잘한 점 (Keep)
   - 🔧 개선할 점 (Problem)
   - 💡 시도해볼 것 (Try)
   - 📝 배운 점 / 기술 인사이트
 
-- [ ] PR 생성 및 머지
+- [x] PR 생성 및 머지
 
 ---
 
