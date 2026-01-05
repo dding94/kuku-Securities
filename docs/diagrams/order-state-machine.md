@@ -51,6 +51,6 @@ stateDiagram-v2
 
 ## Related Files
 
-- [Order.java](file:///Users/mg/Desktop/MG/01-이직/01-개인프로젝트/kuku/kuku-order-system/src/main/java/com/securities/kuku/order/domain/Order.java)
-- [OrderStatus.java](file:///Users/mg/Desktop/MG/01-이직/01-개인프로젝트/kuku/kuku-order-system/src/main/java/com/securities/kuku/order/domain/OrderStatus.java)
-- [ADR-010](file:///Users/mg/Desktop/MG/01-이직/01-개인프로젝트/kuku/docs/adr/010-order-state-machine-pattern.md)
+- [Order.java](../../kuku-order-system/src/main/java/com/securities/kuku/order/domain/Order.java)
+- [OrderStatus.java](../../kuku-order-system/src/main/java/com/securities/kuku/order/domain/OrderStatus.java)
+- [ADR-010](../adr/010-order-state-machine-pattern.md)
