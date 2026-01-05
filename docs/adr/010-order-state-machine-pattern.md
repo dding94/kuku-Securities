@@ -150,6 +150,6 @@ public enum OrderStatus {
 
 ## 6. References
 
-*   [Transaction.java](file:///Users/mg/Desktop/MG/01-이직/01-개인프로젝트/kuku/kuku-core-ledger/src/main/java/com/securities/kuku/ledger/domain/Transaction.java) - 참고한 기존 패턴
+*   [Transaction.java](../../kuku-core-ledger/src/main/java/com/securities/kuku/ledger/domain/Transaction.java) - 참고한 기존 패턴
 *   [State Pattern - Refactoring Guru](https://refactoring.guru/design-patterns/state)
 *   Martin Fowler - "Patterns of Enterprise Application Architecture"
