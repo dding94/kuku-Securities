@@ -5,7 +5,6 @@ import com.securities.kuku.order.application.port.in.command.PlaceOrderCommand;
 import com.securities.kuku.order.application.port.out.OrderPort;
 import com.securities.kuku.order.application.validation.OrderValidator;
 import com.securities.kuku.order.domain.Order;
-import com.securities.kuku.order.domain.OrderValidationException;
 import com.securities.kuku.order.domain.RejectionReason;
 import java.time.Clock;
 import java.time.Instant;
@@ -39,12 +38,12 @@ public class PlaceOrderService implements PlaceOrderUseCase {
             now);
 
     Optional<RejectionReason> rejectionReason = orderValidator.validate(order);
-    if (rejectionReason.isPresent()) {
-      throw new OrderValidationException(rejectionReason.get());
-    }
 
-    Order validatedOrder = order.validate(now);
+    Order finalOrder =
+        rejectionReason
+            .map(reason -> order.reject(reason, now))
+            .orElseGet(() -> order.validate(now));
 
-    return orderPort.save(validatedOrder);
+    return orderPort.save(finalOrder);
   }
 }

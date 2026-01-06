@@ -454,3 +454,84 @@ Week 5 완료 후 동시성 제어 전략 구현으로 넘어갑니다:
 - [ ] 극한 동시성 테스트 (1000명 동시 100만원 매수)
 - [ ] DB Lock 경쟁 시나리오 테스트
 - [ ] 장애 주입 테스트 (Redis 장애, Connection Pool 고갈)
+
+---
+
+## 미래 개선 사항 (Future Enhancements)
+
+### 거부 주문 처리 개선: 도메인 이벤트 기반 접근
+
+> [!NOTE]
+> **현재 상태**: 검증 실패 시 `OrderValidationException` 발생, 거부 주문 미저장
+> **목표 상태**: 모든 주문(성공/거부)을 저장하고, 도메인 이벤트로 후속 처리
+
+#### 배경 및 필요성
+
+1. **규제 준수 (Compliance)**: 금감원 검사 시 거부된 주문에 대한 증빙 필요
+2. **고객 민원 대응**: "왜 내 주문이 거부되었나요?" 히스토리 조회
+3. **패턴 분석**: 반복적인 잔액 부족 주문 → UX/마케팅 인사이트
+
+#### 구현 계획 (Week 7 Kafka 이벤트 발행과 연계)
+
+##### Phase 1: 거부 주문 저장 (Week 5 후속)
+
+```java
+// PlaceOrderService.java - 예외 대신 상태 기반 처리
+public Order placeOrder(PlaceOrderCommand command) {
+    Order order = Order.create(...);
+    Optional<RejectionReason> reason = orderValidator.validate(order);
+    
+    Order finalOrder = reason
+        .map(r -> order.reject(r, now))   // REJECTED 상태
+        .orElseGet(() -> order.validate(now));  // VALIDATED 상태
+    
+    return orderPort.save(finalOrder);  // 항상 저장
+}
+```
+
+##### Phase 2: 도메인 이벤트 발행 (Week 7)
+
+```java
+// Order.java - 도메인 이벤트 생성
+public Order reject(RejectionReason reason, Instant now) {
+    // 상태 전이 후 도메인 이벤트 등록
+    Order rejected = this.withStatus(OrderStatus.REJECTED, reason, now);
+    rejected.registerEvent(OrderRejectedEvent.of(this.id, reason, now));
+    return rejected;
+}
+
+// PlaceOrderService.java - 이벤트 발행
+Order savedOrder = orderPort.save(finalOrder);
+eventPublisher.publish(savedOrder.domainEvents());
+return savedOrder;
+```
+
+##### Phase 3: 이벤트 핸들러 (Week 7)
+
+```java
+@EventListener
+public class OrderAuditEventHandler {
+    
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    public void handleOrderRejected(OrderRejectedEvent event) {
+        // 감사 로그 저장
+        auditLogPort.save(AuditLog.fromRejection(event));
+        
+        // 알림 발송 (선택적)
+        if (event.reason() == RejectionReason.INSUFFICIENT_BALANCE) {
+            notificationPort.sendBalanceAlert(event.accountId());
+        }
+    }
+}
+```
+
+#### 연관 작업
+
+- [ ] `OrderStatus.isSuccessful()` 메서드 추가 (VALIDATED, FILLED → true)
+- [ ] `OrderRejectedEvent`, `OrderValidatedEvent` 도메인 이벤트 정의
+- [ ] Controller HTTP 상태 코드 결정 로직 개선
+- [ ] Outbox 패턴 적용 (Kafka 메시지 발행 보장)
+
+#### ADR 참조
+
+- [ADR-008: Outbox Pattern](file:///docs/adr/008-outbox-pattern.md) - 도메인 이벤트 발행 패턴

@@ -34,7 +34,11 @@ public class OrderController {
   public ResponseEntity<OrderResponse> placeOrder(@Valid @RequestBody PlaceOrderRequest request) {
     PlaceOrderCommand command = toCommand(request);
     Order order = placeOrderUseCase.placeOrder(command);
-    return ResponseEntity.status(HttpStatus.CREATED).body(OrderResponse.from(order));
+    OrderResponse response = OrderResponse.from(order);
+
+    HttpStatus status =
+        order.getStatus().isSuccessful() ? HttpStatus.CREATED : HttpStatus.UNPROCESSABLE_ENTITY;
+    return ResponseEntity.status(status).body(response);
   }
 
   @GetMapping("/{orderId}")

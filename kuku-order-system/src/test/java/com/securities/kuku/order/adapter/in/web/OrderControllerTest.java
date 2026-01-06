@@ -19,7 +19,6 @@ import com.securities.kuku.order.domain.OrderNotFoundException;
 import com.securities.kuku.order.domain.OrderSide;
 import com.securities.kuku.order.domain.OrderStatus;
 import com.securities.kuku.order.domain.OrderType;
-import com.securities.kuku.order.domain.OrderValidationException;
 import com.securities.kuku.order.domain.RejectionReason;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -46,6 +45,10 @@ class OrderControllerTest {
   @MockitoBean private CancelOrderUseCase cancelOrderUseCase;
 
   private Order createOrder(Long id, OrderStatus status) {
+    return createOrder(id, status, null);
+  }
+
+  private Order createOrder(Long id, OrderStatus status, RejectionReason rejectionReason) {
     return new Order(
         id,
         1L,
@@ -55,7 +58,7 @@ class OrderControllerTest {
         OrderType.MARKET,
         new BigDecimal("150.00"),
         status,
-        null,
+        rejectionReason,
         "ref-001",
         null,
         null,
@@ -96,7 +99,7 @@ class OrderControllerTest {
     }
 
     @Test
-    @DisplayName("검증 실패 시 422 Unprocessable Entity를 반환한다")
+    @DisplayName("검증 실패 시 422 Unprocessable Entity와 REJECTED 상태 주문을 반환한다")
     void failure_returns422_whenValidationFails() throws Exception {
       // Given
       PlaceOrderRequest request =
@@ -108,8 +111,9 @@ class OrderControllerTest {
               "MARKET",
               new BigDecimal("150.00"),
               "ref-001");
-      given(placeOrderUseCase.placeOrder(any(PlaceOrderCommand.class)))
-          .willThrow(new OrderValidationException(RejectionReason.INSUFFICIENT_BALANCE));
+      Order rejectedOrder =
+          createOrder(1L, OrderStatus.REJECTED, RejectionReason.INSUFFICIENT_BALANCE);
+      given(placeOrderUseCase.placeOrder(any(PlaceOrderCommand.class))).willReturn(rejectedOrder);
 
       // When & Then
       mockMvc
@@ -118,7 +122,9 @@ class OrderControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isUnprocessableEntity())
-          .andExpect(jsonPath("$.error").value("VALIDATION_FAILED"));
+          .andExpect(jsonPath("$.orderId").value(1))
+          .andExpect(jsonPath("$.status").value("REJECTED"))
+          .andExpect(jsonPath("$.rejectedReason").value("INSUFFICIENT_BALANCE"));
     }
 
     @Test
