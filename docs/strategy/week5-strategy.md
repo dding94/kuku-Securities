@@ -161,40 +161,40 @@ kuku-order-system/src/main/java/com/securities/kuku/order/
 > **목표.md 반영**: OrderController 구현 - 주문 생성, 조회, 취소 API
 
 ### TDD Cycle (주문 생성 API)
-- [ ] **RED**: `POST /api/v1/orders` 성공 테스트
+- [x] **RED**: `POST /api/v1/orders` 성공 테스트
   - Given: 유효한 주문 요청
   - When: API 호출
   - Then: 201 Created, 주문 ID 반환
-- [ ] **GREEN**: OrderController.placeOrder() 구현
-- [ ] **REFACTOR**: DTO 분리 (Request, Response)
+- [x] **GREEN**: OrderController.placeOrder() 구현
+- [x] **REFACTOR**: DTO 분리 (Request, Response)
 
 ### TDD Cycle (주문 조회 API)
-- [ ] **RED**: `GET /api/v1/orders/{orderId}` 성공 테스트
-- [ ] **GREEN**: OrderController.getOrder() 구현
-- [ ] **REFACTOR**: 없는 주문 조회 시 404 응답 처리
+- [x] **RED**: `GET /api/v1/orders/{orderId}` 성공 테스트
+- [x] **GREEN**: OrderController.getOrder() 구현
+- [x] **REFACTOR**: 없는 주문 조회 시 404 응답 처리
 
 ### TDD Cycle (GetOrderService)
-- [ ] **RED**: 존재하는 주문 조회 테스트
+- [x] **RED**: 존재하는 주문 조회 테스트
   - Given: 저장된 주문
   - When: getOrder(orderId) 호출
   - Then: 주문 정보 반환
-- [ ] **GREEN**: GetOrderService 구현
-- [ ] **REFACTOR**: Optional 처리 및 예외 변환 (OrderNotFoundException)
+- [x] **GREEN**: GetOrderService 구현
+- [x] **REFACTOR**: Optional 처리 및 예외 변환 (OrderNotFoundException)
 
 ### TDD Cycle (주문 취소 API)
-- [ ] **RED**: `DELETE /api/v1/orders/{orderId}` 성공 테스트
-- [ ] **GREEN**: OrderController.cancelOrder() 구현
-- [ ] **REFACTOR**: 취소 불가 상태 처리 (FILLED, REJECTED, CANCELLED)
+- [x] **RED**: `POST /api/v1/orders/{orderId}/cancel` 성공 테스트
+- [x] **GREEN**: OrderController.cancelOrder() 구현
+- [x] **REFACTOR**: 취소 불가 상태 처리 (FILLED, REJECTED, CANCELLED)
 
 ### 구현 항목
-- [ ] `OrderController` 생성
+- [x] `OrderController` 생성
   - `POST /api/v1/orders` - 주문 생성
   - `GET /api/v1/orders/{orderId}` - 주문 조회
-  - `DELETE /api/v1/orders/{orderId}` - 주문 취소
-- [ ] Request/Response DTO 정의
+  - `POST /api/v1/orders/{orderId}/cancel` - 주문 취소
+- [x] Request/Response DTO 정의
   - `PlaceOrderRequest`: symbol, quantity, side, orderType, price(optional)
   - `OrderResponse`: orderId, status, createdAt, ...
-- [ ] 에러 응답 표준화
+- [x] 에러 응답 표준화
   - 400 Bad Request: 잘못된 요청 형식
   - 404 Not Found: 주문 없음
   - 409 Conflict: 취소 불가 상태

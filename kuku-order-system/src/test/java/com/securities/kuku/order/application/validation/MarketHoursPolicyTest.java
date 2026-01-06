@@ -18,7 +18,6 @@ class MarketHoursPolicyTest {
   private static final ZoneId KOREA_ZONE = ZoneId.of("Asia/Seoul");
   private static final LocalDate TRADING_DAY = LocalDate.of(2026, 1, 6); // 화요일
 
-  // isMarketOpen(Instant)은 주입된 Clock을 사용하지 않으므로 인스턴스 공유 가능
   private final MarketHoursPolicy policy = new MarketHoursPolicy(Clock.systemUTC());
 
   private Instant toInstant(LocalTime time) {

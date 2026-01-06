@@ -167,6 +167,22 @@ class TransactionTest {
 }
 ```
 
+#### @MockitoBean 사용 (Spring Boot 3.4+)
+Spring Boot 3.4부터 `@MockBean`은 deprecated되었습니다. **`@MockitoBean`**을 사용합니다.
+
+```java
+// ❌ Deprecated: @MockBean (Spring Boot 3.4+에서 deprecated)
+import org.springframework.boot.test.mock.mockito.MockBean;
+@MockBean private SomeService someService;
+
+// ✅ 권장: @MockitoBean
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+@MockitoBean private SomeService someService;
+```
+
+*   `@WebMvcTest`, `@SpringBootTest` 등 슬라이스 테스트에서 Mock Bean을 주입할 때 사용
+*   `@SpyBean` → `@MockitoSpyBean`으로 대체
+
 #### AssertJ 사용
 가독성 높은 검증을 위해 **AssertJ**를 사용합니다.
 
@@ -178,6 +194,7 @@ assertThatThrownBy(() -> tx.toReversed())
     .isInstanceOf(InvalidTransactionStateException.class)
     .hasMessageContaining("PENDING");
 ```
+
 
 ### Class Member Ordering (클래스 멤버 순서)
 
