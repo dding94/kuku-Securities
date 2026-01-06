@@ -11,44 +11,44 @@ REST API 레이어를 구현하고 OpenAPI(Swagger) 문서화를 통해 API 명�
 > **목표.md 반영**: 주문 생명주기 관리, 상태 패턴(State Pattern) 적용
 
 ### TDD Cycle (Order 엔티티)
-- [ ] **RED**: Order 생성 테스트 작성
+- [x] **RED**: Order 생성 테스트 작성
   - Given: 유효한 주문 정보 (accountId, symbol, quantity, side)
   - When: Order.create() 호출
   - Then: CREATED 상태로 생성됨
-- [ ] **GREEN**: Order 엔티티 및 초기 상태 구현
-- [ ] **REFACTOR**: 빌더 패턴 또는 정적 팩토리 메서드 적용
+- [x] **GREEN**: Order 엔티티 및 초기 상태 구현
+- [x] **REFACTOR**: 빌더 패턴 또는 정적 팩토리 메서드 적용
 
 ### TDD Cycle (상태 전이)
-- [ ] **RED**: CREATED → VALIDATED 전환 테스트
-- [ ] **GREEN**: validate() 메서드 구현
-- [ ] **REFACTOR**: 상태 전이 로직 캡슐화
+- [x] **RED**: CREATED → VALIDATED 전환 테스트
+- [x] **GREEN**: validate() 메서드 구현
+- [x] **REFACTOR**: 상태 전이 로직 캡슐화
 
-- [ ] **RED**: VALIDATED → FILLED 전환 테스트
-- [ ] **GREEN**: fill() 메서드 구현
+- [x] **RED**: VALIDATED → FILLED 전환 테스트
+- [x] **GREEN**: fill() 메서드 구현
 
-- [ ] **RED**: VALIDATED → REJECTED 전환 테스트
-- [ ] **GREEN**: reject() 메서드 구현
+- [x] **RED**: VALIDATED → REJECTED 전환 테스트
+- [x] **GREEN**: reject() 메서드 구현
 
-- [ ] **RED**: VALIDATED → CANCELLED 전환 테스트
-- [ ] **GREEN**: cancel() 메서드 구현
+- [x] **RED**: VALIDATED → CANCELLED 전환 테스트
+- [x] **GREEN**: cancel() 메서드 구현
 
 ### 구현 항목
-- [ ] `Order` 엔티티 설계
+- [x] `Order` 엔티티 설계
   - id, accountId, symbol, quantity, side, price, orderType
   - status, rejectedReason, createdAt, updatedAt
   - businessRefId (주문 추적용 비즈니스 참조 ID)
     > ⚠️ **멱등성 처리(Idempotency-Key)는 Week 8에서 별도 구현** - `businessRefId`는 클라이언트가 제공하는 주문 추적 ID, `Idempotency-Key`는 HTTP 헤더 기반 재시도 방지 키로 역할이 다름
   - executedPrice, executedQuantity (nullable, Week 7 체결 정보 저장용)
-- [ ] `OrderStatus` enum 정의
+- [x] `OrderStatus` enum 정의
   - CREATED: 주문 생성됨
   - VALIDATED: 검증 완료 (예수금 확보, 규칙 통과)
   - FILLED: 체결 완료
   - REJECTED: 거부됨 (사유 포함)
   - CANCELLED: 사용자에 의해 취소됨
   > ⚠️ **부분 체결(PARTIALLY_FILLED)은 Week 7에서 확장** - 슬리피지 방어 및 잔량 취소 정책과 함께 구현 예정 (YAGNI 원칙)
-- [ ] `OrderSide` enum 정의 (BUY, SELL)
-- [ ] `OrderType` enum 정의 (MARKET - Week 5에서는 시장가만 지원)
-- [ ] `RejectionReason` 정의
+- [x] `OrderSide` enum 정의 (BUY, SELL)
+- [x] `OrderType` enum 정의 (MARKET - Week 5에서는 시장가만 지원)
+- [x] `RejectionReason` 정의
   - INSUFFICIENT_BALANCE: 예수금 부족
   - INSUFFICIENT_QUANTITY: 보유 수량 부족
   - MARKET_CLOSED: 장 마감
@@ -70,13 +70,13 @@ stateDiagram-v2
 ```
 
 ### 문서화
-- [ ] **[Diagram]** 주문 상태 머신 다이어그램 (`/docs/diagrams/order-state-machine.md`)
-- [ ] **[ADR]** 상태 머신 설계 패턴 결정 (`/docs/adr/009-order-state-machine-pattern.md`)
+- [x] **[Diagram]** 주문 상태 머신 다이어그램 (`/docs/diagrams/order-state-machine.md`)
+- [x] **[ADR]** 상태 머신 설계 패턴 결정 (`/docs/adr/010-order-state-machine-pattern.md`)
   - State Pattern vs Enum + Domain Method 비교
   - YAGNI 원칙에 따른 Enum 방식 선택 근거
   - Week 7 확장 시 리팩토링 전략
 
-- [ ] PR 생성 및 머지
+- [x] PR 생성 및 머지
 
 ---
 
@@ -85,38 +85,38 @@ stateDiagram-v2
 > **목표.md 반영**: 예수금 부족, 보유 수량 부족 시 REJECT, 장 운영 시간 위반 시 REJECT
 
 ### TDD Cycle (예수금 검증)
-- [ ] **RED**: 매수 시 예수금 부족 테스트
+- [x] **RED**: 매수 시 예수금 부족 테스트
   - Given: 잔액 10,000원, 주문 금액 50,000원
   - When: validate() 호출
   - Then: REJECTED (INSUFFICIENT_BALANCE)
-- [ ] **GREEN**: 예수금 검증 로직 구현
-- [ ] **REFACTOR**: 검증 로직 분리 (OrderValidator)
+- [x] **GREEN**: 예수금 검증 로직 구현
+- [x] **REFACTOR**: 검증 로직 분리 (OrderValidator)
 
 ### TDD Cycle (보유 수량 검증)
-- [ ] **RED**: 매도 시 보유 수량 부족 테스트
+- [x] **RED**: 매도 시 보유 수량 부족 테스트
   - Given: 보유 수량 5주, 매도 주문 10주
   - When: validate() 호출
   - Then: REJECTED (INSUFFICIENT_QUANTITY)
-- [ ] **GREEN**: 보유 수량 검증 로직 구현
-- [ ] **REFACTOR**: Ledger 연동 추상화 (Port 정의)
+- [x] **GREEN**: 보유 수량 검증 로직 구현
+- [x] **REFACTOR**: Ledger 연동 추상화 (Port 정의)
 
 ### TDD Cycle (장 운영 시간 검증)
-- [ ] **RED**: 장 마감 시간 주문 테스트
+- [x] **RED**: 장 마감 시간 주문 테스트
   - Given: 현재 시간 18:00 (장 마감 후)
   - When: validate() 호출
   - Then: REJECTED (MARKET_CLOSED)
-- [ ] **GREEN**: 장 운영 시간 검증 로직 구현
-- [ ] **REFACTOR**: 시간 관련 로직 Clock 주입 (테스트 용이성)
+- [x] **GREEN**: 장 운영 시간 검증 로직 구현
+- [x] **REFACTOR**: 시간 관련 로직 Clock 주입 (테스트 용이성)
 
 ### 구현 항목
-- [ ] `OrderValidator` 컴포넌트 생성
+- [x] `OrderValidator` 컴포넌트 생성
   - validateBalance(Order order): 예수금 검증
   - validateQuantity(Order order): 보유 수량 검증
   - validateMarketHours(Order order): 장 운영 시간 검증
-- [ ] `MarketHoursPolicy` 설계
+- [x] `MarketHoursPolicy` 설계
   - 장 시작: 09:00, 장 마감: 15:30 (KST 기준)
   - 휴장일 처리 (선택적, Week 11 버퍼에서 확장 가능)
-- [ ] Ledger 서비스 연동 Port 정의
+- [x] Ledger 서비스 연동 Port 정의
   - `BalanceQueryPort`: 잔액 조회
   - `PositionQueryPort`: 보유 수량 조회 (Week 9와 연계)
   > ⚠️ **Week 5에서는 Mock 구현체 사용** - 실제 Ledger 연동은 Week 7에서 `Trade → Ledger → Position` 플로우와 함께 구현. Week 5에서는 `MockBalanceQueryAdapter`, `MockPositionQueryAdapter`로 테스트 가능하도록 구성
@@ -125,33 +125,32 @@ stateDiagram-v2
 
 ```
 kuku-order-system/src/main/java/com/securities/kuku/order/
-├── domain/
+├── domain/                            ← PR 1 완료
 │   ├── Order.java
 │   ├── OrderStatus.java
 │   ├── OrderSide.java
 │   ├── OrderType.java
-│   └── RejectionReason.java
+│   ├── RejectionReason.java
+│   └── InvalidOrderStateException.java
 ├── application/
 │   ├── port/
-│   │   ├── in/
-│   │   │   ├── PlaceOrderUseCase.java
-│   │   │   ├── CancelOrderUseCase.java
-│   │   │   └── command/
-│   │   │       ├── PlaceOrderCommand.java
-│   │   │       └── CancelOrderCommand.java
-│   │   └── out/
-│   │       ├── OrderPort.java
+│   │   └── out/                       ← PR 2 완료
 │   │       ├── BalanceQueryPort.java
 │   │       └── PositionQueryPort.java
-│   ├── service/
-│   │   ├── PlaceOrderService.java
-│   │   └── CancelOrderService.java
-│   └── validation/
+│   └── validation/                    ← PR 2 완료
 │       ├── OrderValidator.java
 │       └── MarketHoursPolicy.java
+├── adapter/
+│   └── out/
+│       └── mock/                      ← PR 2 완료 (Week 5 임시)
+│           ├── MockBalanceQueryAdapter.java
+│           └── MockPositionQueryAdapter.java
 └── config/
-    └── ClockConfig.java
+    └── ClockConfig.java               ← PR 2 완료
 ```
+
+> [!NOTE]
+> `application/port/in/`, `application/service/`, `adapter/in/web/`는 PR 3에서 구현 예정
 
 - [ ] PR 생성 및 머지
 
