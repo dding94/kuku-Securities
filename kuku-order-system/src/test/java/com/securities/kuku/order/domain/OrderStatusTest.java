@@ -84,4 +84,27 @@ class OrderStatusTest {
       assertThat(status.isTerminal()).isFalse();
     }
   }
+
+  @Nested
+  @DisplayName("isSuccessful() 메서드")
+  class IsSuccessful {
+
+    @ParameterizedTest
+    @EnumSource(
+        value = OrderStatus.class,
+        names = {"VALIDATED", "FILLED"})
+    @DisplayName("성공 상태는 true를 반환한다")
+    void successfulStates(OrderStatus status) {
+      assertThat(status.isSuccessful()).isTrue();
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = OrderStatus.class,
+        names = {"CREATED", "REJECTED", "CANCELLED"})
+    @DisplayName("비성공 상태는 false를 반환한다")
+    void nonSuccessfulStates(OrderStatus status) {
+      assertThat(status.isSuccessful()).isFalse();
+    }
+  }
 }

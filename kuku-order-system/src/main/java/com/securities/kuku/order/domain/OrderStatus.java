@@ -21,4 +21,11 @@ public enum OrderStatus {
       case CREATED, VALIDATED -> false;
     };
   }
+
+  public boolean isSuccessful() {
+    return switch (this) {
+      case VALIDATED, FILLED -> true;
+      case CREATED, REJECTED, CANCELLED -> false;
+    };
+  }
 }
