@@ -60,8 +60,9 @@ public class OrderValidator {
 
   private BigDecimal calculateRequiredAmount(Order order) {
     if (order.getPrice() == null) {
-      // 시장가 주문의 경우, 가격이 null일 수 있음 (Week 7에서 시세 조회 연동)
-      return BigDecimal.ZERO;
+      // 시장가 매수 주문의 경우 가격 정보가 없으면 필요 금액을 산출할 수 없습니다.
+      // Week 7에서 시세 조회 기능이 연동될 때까지 가격 없는 매수 주문은 처리할 수 없습니다.
+      throw new IllegalArgumentException("Price is required to calculate amount for a buy order.");
     }
     return order.getQuantity().multiply(order.getPrice());
   }

@@ -1,6 +1,7 @@
 package com.securities.kuku.order.application.validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.securities.kuku.order.application.port.out.BalanceQueryPort;
@@ -112,6 +113,19 @@ class OrderValidatorTest {
 
       // Then
       assertThat(result).contains(RejectionReason.INSUFFICIENT_BALANCE);
+    }
+
+    @Test
+    @DisplayName("매수 주문 시 가격이 null이면 예외 발생")
+    void throwsException_whenPriceIsNullForBuyOrder() {
+      // Given
+      Order order = createBuyOrder(BigDecimal.TEN, null); // price = null
+      given(marketHoursPolicy.isMarketOpen(FIXED_TIME)).willReturn(true);
+
+      // When & Then
+      assertThatThrownBy(() -> validator.validate(order))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Price is required");
     }
   }
 
