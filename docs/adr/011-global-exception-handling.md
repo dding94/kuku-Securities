@@ -103,6 +103,22 @@ public abstract class BusinessException extends RuntimeException {
 }
 ```
 
+**왜 RuntimeException을 직접 상속하지 않고 BusinessException 중간 계층을 두는가?**
+
+| 관점 | RuntimeException 직접 상속 | BusinessException 상속 |
+|------|--------------------------|----------------------|
+| **Handler 코드** | 예외마다 별도 핸들러 필요 | 단일 핸들러로 모든 비즈니스 예외 처리 |
+| **계약 강제** | `getErrorCode()` 보장 없음 | 모든 하위 예외에 `ErrorCode` 강제 |
+| **구분 가능성** | 시스템/비즈니스 예외 구분 불가 | catch 블록에서 타입으로 명확히 구분 |
+| **확장성** | 예외 추가 시 Handler 추가 필요 | 예외 클래스만 추가하면 됨 |
+
+**핵심 이점:**
+
+1. **단일 ExceptionHandler**: `@ExceptionHandler(BusinessException.class)`로 모든 비즈니스 예외 처리
+2. **공통 계약(Contract)**: 모든 하위 예외가 `getErrorCode()`를 반드시 구현 → 일관된 응답 생성
+3. **시스템 vs 비즈니스 분리**: 비즈니스 규칙 위반(잔액 부족)과 시스템 장애(DB 연결 실패)를 타입으로 구분
+4. **AOP/메트릭 적용**: 비즈니스 예외만 선택적으로 모니터링 대시보드에 집계 가능
+
 ### 2.5. 표준 ErrorResponse
 
 ```java
