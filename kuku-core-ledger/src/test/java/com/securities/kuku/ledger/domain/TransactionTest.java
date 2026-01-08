@@ -3,6 +3,7 @@ package com.securities.kuku.ledger.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.securities.kuku.ledger.domain.exception.InvalidTransactionStateException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;

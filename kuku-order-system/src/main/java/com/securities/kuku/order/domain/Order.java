@@ -1,5 +1,6 @@
 package com.securities.kuku.order.domain;
 
+import com.securities.kuku.order.domain.exception.InvalidOrderStateException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.Getter;

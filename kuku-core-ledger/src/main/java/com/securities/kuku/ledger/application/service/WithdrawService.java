@@ -8,10 +8,10 @@ import com.securities.kuku.ledger.application.port.out.JournalEntryPort;
 import com.securities.kuku.ledger.application.port.out.TransactionPort;
 import com.securities.kuku.ledger.domain.Account;
 import com.securities.kuku.ledger.domain.Balance;
-import com.securities.kuku.ledger.domain.InsufficientBalanceException;
 import com.securities.kuku.ledger.domain.JournalEntry;
 import com.securities.kuku.ledger.domain.Transaction;
 import com.securities.kuku.ledger.domain.TransactionType;
+import com.securities.kuku.ledger.domain.exception.InsufficientBalanceException;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -42,13 +42,11 @@ public class WithdrawService implements WithdrawUseCase {
       backoff = @Backoff(delay = 100, multiplier = 2.0, maxDelay = 1000))
   @Transactional
   public void withdraw(WithdrawCommand command) {
-    // 1. Idempotency Check
     if (isDuplicateTransaction(command.businessRefId())) {
       log.warn("Duplicate transaction detected. businessRefId={}", command.businessRefId());
       return;
     }
 
-    // 2. Load Aggregates
     Account account =
         accountPort
             .findById(command.accountId())
@@ -61,27 +59,19 @@ public class WithdrawService implements WithdrawUseCase {
             .orElseThrow(
                 () -> new IllegalArgumentException("Balance not found: " + command.accountId()));
 
-    // Capture semantic time for this operation
     Instant now = clock.instant();
-
-    // 3. Validate sufficient balance (fail-fast before any writes)
     validateSufficientBalance(balance, command.amount());
 
-    // 4. Create & Save Transaction
     Transaction transaction =
         Transaction.createWithdraw(command.description(), command.businessRefId(), now);
     Transaction savedTransaction = transactionPort.save(transaction);
 
-    // 5. Create & Save Journal Entry
     JournalEntry journalEntry =
         JournalEntry.createDebit(savedTransaction.getId(), account.getId(), command.amount(), now);
     journalEntryPort.save(journalEntry);
-
-    // 6. Update Balance
     Balance newBalance = balance.withdraw(command.amount(), savedTransaction.getId(), now);
     balancePort.update(newBalance);
 
-    // 7. Publish Domain Event
     outboxEventRecorder.record(
         savedTransaction.toPostedEvent(
             command.accountId(), command.amount(), TransactionType.WITHDRAWAL));
@@ -90,10 +80,7 @@ public class WithdrawService implements WithdrawUseCase {
   private void validateSufficientBalance(Balance balance, BigDecimal amount) {
     if (amount.compareTo(balance.getAvailableAmount()) > 0) {
       throw new InsufficientBalanceException(
-          "Insufficient balance. Available: "
-              + balance.getAvailableAmount()
-              + ", Requested: "
-              + amount);
+          balance.getAccountId(), amount, balance.getAvailableAmount());
     }
   }
 
