@@ -6,7 +6,7 @@ import com.securities.kuku.ledger.application.port.in.command.DepositCommand;
 import com.securities.kuku.ledger.application.port.in.command.WithdrawCommand;
 import com.securities.kuku.ledger.application.service.DepositService;
 import com.securities.kuku.ledger.application.service.WithdrawService;
-import com.securities.kuku.ledger.domain.InsufficientBalanceException;
+import com.securities.kuku.ledger.domain.exception.InsufficientBalanceException;
 import com.securities.kuku.ledger.test.support.ConcurrencyRunner;
 import com.securities.kuku.ledger.test.support.ConcurrencyRunner.ExecutionResult;
 import com.securities.kuku.ledger.test.support.LedgerTestFixture;

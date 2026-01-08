@@ -3,6 +3,7 @@ package com.securities.kuku.order.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.securities.kuku.order.domain.exception.InvalidOrderStateException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;

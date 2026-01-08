@@ -328,6 +328,50 @@ kuku-order-system/src/main/java/com/securities/kuku/order/
 
 ---
 
+## PR 7: 예외 패키지 구조 개선 및 ErrorResponse 리팩토링 (~150 LOC)
+
+> **추가 개선 사항**: 코드 품질 및 테스트 가능성 향상
+
+### 구현 항목
+
+#### 1. 예외 클래스 패키지 분리
+- [x] Order 모듈: `domain/exception/` 서브패키지 생성
+  - `OrderErrorCode.java`
+  - `OrderNotFoundException.java`
+  - `InvalidOrderStateException.java`
+  - `InvalidOrderSideException.java`
+  - `InvalidOrderTypeException.java`
+  - `OrderLimitExceededException.java`
+  - `OrderValidationException.java`
+- [x] Ledger 모듈: `domain/exception/` 서브패키지 생성
+  - `LedgerErrorCode.java`
+  - `InsufficientBalanceException.java`
+  - `InvalidTransactionStateException.java`
+
+#### 2. ErrorResponse Static Clock 안티패턴 제거
+- [x] `ErrorResponse`에서 `static Clock` 및 `setClock()`/`resetClock()` 제거
+- [x] 모든 팩토리 메서드가 `Instant timestamp`를 필수 파라미터로 받도록 변경
+- [x] `OrderExceptionHandler`에 `Clock` DI 추가
+- [x] 테스트 격리성 및 병렬 테스트 안전성 확보
+
+#### 3. 테스트 코드 품질 개선
+- [x] 매직 스트링 제거: `"ORDER_001"` → `ORDER_NOT_FOUND.getCode()`
+- [x] `OrderErrorCode`, `CommonErrorCode` static import 적용
+- [x] 미사용 코드 제거 (`FIXED_CLOCK`, `ZoneId` import)
+
+### 아키텍처 결정 근거
+
+| 관점 | Before | After |
+|------|--------|-------|
+| **테스트 격리** | Static state 공유 ❌ | DI 기반 독립 실행 ✅ |
+| **병렬 테스트** | Race condition 가능 ❌ | 안전 ✅ |
+| **SRP** | DTO가 시간 책임 ❌ | Handler 책임 ✅ |
+| **일관성** | 서비스와 패턴 불일치 ❌ | Clock DI 패턴 통일 ✅ |
+
+- [x] PR 생성 및 머지
+
+---
+
 ## Hexagonal Architecture 패키지 구조 (Week 5 최종)
 
 > 실제 구현된 구조 (Week 5 완료 시점)

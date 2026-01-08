@@ -2,6 +2,7 @@ package com.securities.kuku.ledger.domain;
 
 import com.securities.kuku.ledger.domain.event.LedgerPostedEvent;
 import com.securities.kuku.ledger.domain.event.LedgerReversedEvent;
+import com.securities.kuku.ledger.domain.exception.InvalidTransactionStateException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.Getter;

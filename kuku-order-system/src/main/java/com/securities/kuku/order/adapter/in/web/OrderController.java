@@ -7,9 +7,11 @@ import com.securities.kuku.order.application.port.in.GetOrderUseCase;
 import com.securities.kuku.order.application.port.in.PlaceOrderUseCase;
 import com.securities.kuku.order.application.port.in.command.PlaceOrderCommand;
 import com.securities.kuku.order.domain.Order;
-import com.securities.kuku.order.domain.OrderNotFoundException;
 import com.securities.kuku.order.domain.OrderSide;
 import com.securities.kuku.order.domain.OrderType;
+import com.securities.kuku.order.domain.exception.InvalidOrderSideException;
+import com.securities.kuku.order.domain.exception.InvalidOrderTypeException;
+import com.securities.kuku.order.domain.exception.OrderNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -72,7 +74,7 @@ public class OrderController {
     try {
       return OrderSide.valueOf(side.toUpperCase());
     } catch (IllegalArgumentException | NullPointerException e) {
-      throw new IllegalArgumentException("Invalid order side: " + side);
+      throw new InvalidOrderSideException(side);
     }
   }
 
@@ -80,7 +82,7 @@ public class OrderController {
     try {
       return OrderType.valueOf(orderType.toUpperCase());
     } catch (IllegalArgumentException | NullPointerException e) {
-      throw new IllegalArgumentException("Invalid order type: " + orderType);
+      throw new InvalidOrderTypeException(orderType);
     }
   }
 }

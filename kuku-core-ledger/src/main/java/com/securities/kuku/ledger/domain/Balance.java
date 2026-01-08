@@ -1,5 +1,6 @@
 package com.securities.kuku.ledger.domain;
 
+import com.securities.kuku.ledger.domain.exception.InsufficientBalanceException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.Getter;
@@ -69,8 +70,7 @@ public class Balance {
     }
     BigDecimal available = getAvailableAmount();
     if (withdrawAmount.compareTo(available) > 0) {
-      throw new InsufficientBalanceException(
-          "Insufficient balance. Available: " + available + ", Requested: " + withdrawAmount);
+      throw new InsufficientBalanceException(this.accountId, withdrawAmount, available);
     }
     return new Balance(
         this.accountId,

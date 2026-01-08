@@ -1,5 +1,7 @@
 package com.securities.kuku.order.adapter.in.web;
 
+import static com.securities.kuku.common.exception.CommonErrorCode.VALIDATION_FAILED;
+import static com.securities.kuku.order.domain.exception.OrderErrorCode.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -13,14 +15,15 @@ import com.securities.kuku.order.application.port.in.CancelOrderUseCase;
 import com.securities.kuku.order.application.port.in.GetOrderUseCase;
 import com.securities.kuku.order.application.port.in.PlaceOrderUseCase;
 import com.securities.kuku.order.application.port.in.command.PlaceOrderCommand;
-import com.securities.kuku.order.domain.InvalidOrderStateException;
 import com.securities.kuku.order.domain.Order;
-import com.securities.kuku.order.domain.OrderNotFoundException;
 import com.securities.kuku.order.domain.OrderSide;
 import com.securities.kuku.order.domain.OrderStatus;
 import com.securities.kuku.order.domain.OrderType;
 import com.securities.kuku.order.domain.RejectionReason;
+import com.securities.kuku.order.domain.exception.InvalidOrderStateException;
+import com.securities.kuku.order.domain.exception.OrderNotFoundException;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +46,7 @@ class OrderControllerTest {
   @MockitoBean private PlaceOrderUseCase placeOrderUseCase;
   @MockitoBean private GetOrderUseCase getOrderUseCase;
   @MockitoBean private CancelOrderUseCase cancelOrderUseCase;
+  @MockitoBean private Clock clock;
 
   private Order createOrder(Long id, OrderStatus status) {
     return createOrder(id, status, null);
@@ -148,7 +152,7 @@ class OrderControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.error").value("BAD_REQUEST"));
+          .andExpect(jsonPath("$.code").value(INVALID_ORDER_SIDE.getCode()));
     }
 
     @Test
@@ -172,7 +176,7 @@ class OrderControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.error").value("BAD_REQUEST"))
+          .andExpect(jsonPath("$.code").value(VALIDATION_FAILED.getCode()))
           .andExpect(jsonPath("$.message").value("accountId: accountId is required"));
     }
 
@@ -197,7 +201,7 @@ class OrderControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.error").value("BAD_REQUEST"))
+          .andExpect(jsonPath("$.code").value(VALIDATION_FAILED.getCode()))
           .andExpect(jsonPath("$.message").value("symbol: symbol is required"));
     }
 
@@ -222,7 +226,7 @@ class OrderControllerTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isBadRequest())
-          .andExpect(jsonPath("$.error").value("BAD_REQUEST"))
+          .andExpect(jsonPath("$.code").value(VALIDATION_FAILED.getCode()))
           .andExpect(jsonPath("$.message").value("quantity: quantity must be positive"));
     }
   }
@@ -258,7 +262,7 @@ class OrderControllerTest {
       mockMvc
           .perform(get("/api/v1/orders/{orderId}", orderId))
           .andExpect(status().isNotFound())
-          .andExpect(jsonPath("$.error").value("NOT_FOUND"));
+          .andExpect(jsonPath("$.code").value(ORDER_NOT_FOUND.getCode()));
     }
   }
 
@@ -293,7 +297,7 @@ class OrderControllerTest {
       mockMvc
           .perform(post("/api/v1/orders/{orderId}/cancel", orderId))
           .andExpect(status().isNotFound())
-          .andExpect(jsonPath("$.error").value("NOT_FOUND"));
+          .andExpect(jsonPath("$.code").value(ORDER_NOT_FOUND.getCode()));
     }
 
     @Test
@@ -308,7 +312,7 @@ class OrderControllerTest {
       mockMvc
           .perform(post("/api/v1/orders/{orderId}/cancel", orderId))
           .andExpect(status().isConflict())
-          .andExpect(jsonPath("$.error").value("CONFLICT"));
+          .andExpect(jsonPath("$.code").value(INVALID_ORDER_STATE.getCode()));
     }
   }
 }
