@@ -1,0 +1,29 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: kuku-order-system
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: ${SHOW_SQL}
+    properties:
+      hibernate:
+        format_sql: ${FORMAT_SQL}
+        dialect: org.hibernate.dialect.MySQLDialect
+
+# OpenAPI (Swagger) - Spec-First
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    url: /openapi/order-api.yaml
+    tags-sorter: alpha
+    operations-sorter: method
+  api-docs:
+    path: /v3/api-docs

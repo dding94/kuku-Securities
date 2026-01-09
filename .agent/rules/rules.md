@@ -59,6 +59,7 @@ trigger: always_on
 *   **Functions**: 함수는 작게 만들고, 한 가지 일만 하도록 합니다.
 *   **Comments**: 코드로 의도를 표현할 수 없을 때만 주석을 작성합니다. "무엇"이 아닌 "왜"를 설명합니다.
 *   **Abstraction Levels**: 코드를 작성할 때 추상화 레벨을 맞춥니다. 한 함수 안에서는 동일한 수준의 추상화만 존재해야 합니다. (SLAP: Single Level of Abstraction Principle)
+*   코드로 의도를 명확히 표현하고 불필요한 주석은 피합니다. 주석이 꼭 필요하다면 '무엇'이 아닌 '왜'를 설명합니다.
 
 ### Testing (테스트 코드 작성 규칙)
 *   **TDD (Test-Driven Development)**: 가능한 경우 테스트를 먼저 작성하고 구현합니다.
