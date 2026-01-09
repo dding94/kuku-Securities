@@ -1,0 +1,268 @@
+openapi: 3.0.3
+info:
+  title: Kuku Order System API
+  version: v1
+  description: |
+    주문 생성, 조회, 취소 API - Kuku Securities
+
+    ## 주문 상태 흐름
+    ```
+    CREATED → VALIDATED → FILLED
+                      ↘ REJECTED
+                      ↘ CANCELLED
+    ```
+
+servers:
+  - url: http://localhost:8082
+    description: Local Development Server
+
+tags:
+  - name: Orders
+    description: 주문 관리 API
+
+paths:
+  /api/v1/orders:
+    post:
+      tags:
+        - Orders
+      summary: 주문 생성
+      description: |
+        새로운 주문을 생성합니다.
+        예수금/보유수량 검증 후 VALIDATED 또는 REJECTED 상태로 저장됩니다.
+      operationId: placeOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlaceOrderRequest"
+            example:
+              accountId: 12345
+              symbol: "AAPL"
+              quantity: 10
+              side: "BUY"
+              orderType: "MARKET"
+              price: null
+              businessRefId: "REF-20250109-001"
+      responses:
+        "201":
+          description: 주문 생성 성공 (VALIDATED)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+        "422":
+          description: 비즈니스 규칙 위반 (예수금 부족, 장 마감 등)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: "ORDER_005"
+                message: "주문 검증에 실패했습니다: INSUFFICIENT_BALANCE"
+                timestamp: "2025-01-09T06:00:00Z"
+
+  /api/v1/orders/{orderId}:
+    get:
+      tags:
+        - Orders
+      summary: 주문 조회
+      description: 주문 ID로 주문 정보를 조회합니다.
+      operationId: getOrder
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          description: 주문 ID
+          schema:
+            type: integer
+            format: int64
+            example: 1
+      responses:
+        "200":
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+        "404":
+          description: 주문 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: "ORDER_001"
+                message: "주문을 찾을 수 없습니다. ID: 999"
+                timestamp: "2025-01-09T06:00:00Z"
+
+  /api/v1/orders/{orderId}/cancel:
+    post:
+      tags:
+        - Orders
+      summary: 주문 취소
+      description: VALIDATED 상태의 주문을 취소합니다.
+      operationId: cancelOrder
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          description: 주문 ID
+          schema:
+            type: integer
+            format: int64
+            example: 1
+      responses:
+        "200":
+          description: 취소 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+        "404":
+          description: 주문 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 취소 불가 상태 (이미 체결/취소됨)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: "ORDER_002"
+                message: "유효하지 않은 주문 상태입니다. 현재 상태: FILLED"
+                timestamp: "2025-01-09T06:00:00Z"
+
+components:
+  schemas:
+    PlaceOrderRequest:
+      type: object
+      required:
+        - accountId
+        - symbol
+        - quantity
+        - side
+        - orderType
+      properties:
+        accountId:
+          type: integer
+          format: int64
+          description: 계좌 ID
+          example: 12345
+        symbol:
+          type: string
+          description: 종목 코드
+          example: "AAPL"
+        quantity:
+          type: number
+          format: decimal
+          description: 주문 수량
+          example: 10
+        side:
+          type: string
+          enum: [BUY, SELL]
+          description: 매수/매도
+          example: "BUY"
+        orderType:
+          type: string
+          enum: [MARKET]
+          description: 주문 유형 (현재 MARKET만 지원)
+          example: "MARKET"
+        price:
+          type: number
+          format: decimal
+          nullable: true
+          description: 지정가 (MARKET일 경우 null)
+          example: null
+        businessRefId:
+          type: string
+          description: 비즈니스 참조 ID (주문 추적용)
+          example: "REF-20250109-001"
+
+    OrderResponse:
+      type: object
+      properties:
+        orderId:
+          type: integer
+          format: int64
+          description: 주문 ID
+          example: 1
+        accountId:
+          type: integer
+          format: int64
+          description: 계좌 ID
+          example: 12345
+        symbol:
+          type: string
+          description: 종목 코드
+          example: "AAPL"
+        quantity:
+          type: number
+          format: decimal
+          description: 주문 수량
+          example: 10
+        side:
+          type: string
+          enum: [BUY, SELL]
+          description: 매수/매도
+          example: "BUY"
+        orderType:
+          type: string
+          enum: [MARKET]
+          description: 주문 유형
+          example: "MARKET"
+        price:
+          type: number
+          format: decimal
+          nullable: true
+          description: 지정가
+        status:
+          type: string
+          enum: [CREATED, VALIDATED, FILLED, REJECTED, CANCELLED]
+          description: 주문 상태
+          example: "VALIDATED"
+        rejectedReason:
+          type: string
+          nullable: true
+          enum:
+            [
+              INSUFFICIENT_BALANCE,
+              INSUFFICIENT_QUANTITY,
+              MARKET_CLOSED,
+              PRICE_SLIPPAGE,
+            ]
+          description: 거부 사유 (REJECTED일 경우)
+        businessRefId:
+          type: string
+          description: 비즈니스 참조 ID
+          example: "REF-20250109-001"
+        createdAt:
+          type: string
+          format: date-time
+          description: 생성 시각
+          example: "2025-01-09T06:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: 수정 시각
+          example: "2025-01-09T06:00:00Z"
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: 에러 코드
+          example: "ORDER_001"
+        message:
+          type: string
+          description: 에러 메시지
+          example: "주문을 찾을 수 없습니다. ID: 999"
+        timestamp:
+          type: string
+          format: date-time
+          description: 발생 시각
+          example: "2025-01-09T06:00:00Z"
