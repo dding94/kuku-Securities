@@ -76,7 +76,7 @@ stateDiagram-v2
   - YAGNI 원칙에 따른 Enum 방식 선택 근거
   - Week 7 확장 시 리팩토링 전략
 
-- [x] PR 생성 및 머지
+- [x] PR 생성 및 머지 (#33)
 
 ---
 
@@ -152,7 +152,7 @@ kuku-order-system/src/main/java/com/securities/kuku/order/
 > [!NOTE]
 > `application/port/in/`, `application/service/`, `adapter/in/web/`는 PR 3에서 구현 예정
 
-- [ ] PR 생성 및 머지
+- [x] PR 생성 및 머지 (#34)
 
 ---
 
@@ -215,31 +215,73 @@ kuku-order-system/src/main/java/com/securities/kuku/order/
 │           └── GlobalExceptionHandler.java
 ```
 
-- [ ] PR 생성 및 머지
+- [x] PR 생성 및 머지 (#35)
 
 ---
 
-## PR 4: OpenAPI(Swagger) Spec 문서화 (~100 LOC)
+## PR 4: OpenAPI(Swagger) Spec-First 문서화 (~250 LOC)
 
 > **목표.md 반영**: OpenAPI(Swagger) Spec 문서화 (`springdoc-openapi`)
+> **전략 변경**: API-First 접근 방식 채택 - YAML 스펙 선작성 후 SpringDoc 연동
+
+### API-First 접근 방식 선택 이유
+
+| 관점 | 어노테이션 기반 (Code-First) | Spec-First (API-First) |
+|------|------------------------------|------------------------|
+| **설계 우선순위** | 구현 후 문서화 | 명세 먼저, 구현은 나중 |
+| **계약 관리** | 코드 변경 시 명세 자동 변경 | YAML이 단일 진실 공급원(SSOT) |
+| **프론트엔드 협업** | 백엔드 구현 완료 대기 | YAML 공유로 병렬 개발 가능 |
+| **타입 안전성** | 런타임 검증만 | `openapi-generator`로 타입 안전 클라이언트 생성 가능 |
+| **유지보수** | 어노테이션 분산 | 한 곳에서 API 설계 조망 |
+
+> [!IMPORTANT]
+> **결정**: Week 5에서는 팀 협업과 명세 중심 설계를 위해 **Spec-First** 방식 채택.
+> Controller는 비즈니스 로직에 집중하고, API 명세는 `order-api.yaml`에서 중앙 관리.
 
 ### 구현 항목
-- [ ] `springdoc-openapi-starter-webmvc-ui` 의존성 추가
-- [ ] Swagger UI 설정 (`/swagger-ui.html`)
-- [ ] API 메타데이터 설정
-  - 제목: Kuku Order System API
-  - 버전: v1
-  - 설명: 주문 생성, 조회, 취소 API
-- [ ] Controller에 OpenAPI 어노테이션 추가
-  - `@Operation`: API 설명
-  - `@ApiResponse`: 응답 코드별 설명
-  - `@Parameter`: 파라미터 설명
+- [x] `springdoc-openapi-starter-webmvc-ui` 의존성 추가
+- [x] OpenAPI 3.0.3 Spec 파일 작성 (`/resources/openapi/order-api.yaml`)
+  - [x] API 메타데이터 정의
+    - 제목: Kuku Order System API
+    - 버전: v1
+    - 설명: 주문 생성, 조회, 취소 API + 상태 흐름 다이어그램
+  - [x] 3개 엔드포인트 명세 작성
+    - `POST /api/v1/orders` - 주문 생성
+    - `GET /api/v1/orders/{orderId}` - 주문 조회
+    - `POST /api/v1/orders/{orderId}/cancel` - 주문 취소
+  - [x] Request/Response Schema 정의
+    - `PlaceOrderRequest`: accountId, symbol, quantity, side, orderType, price, businessRefId
+    - `OrderResponse`: orderId, accountId, symbol, quantity, side, orderType, price, status, rejectedReason, businessRefId, createdAt, updatedAt
+    - `ErrorResponse`: code, message, timestamp, status, trackingId
+  - [x] HTTP 상태 코드별 응답 예시 작성
+    - 201 Created: 주문 생성 성공 (VALIDATED)
+    - 200 OK: 조회/취소 성공
+    - 404 Not Found: 주문 없음
+    - 409 Conflict: 취소 불가 상태 (FILLED, REJECTED, CANCELLED)
+    - 422 Unprocessable Entity: 비즈니스 규칙 위반 (예수금 부족, 장 마감 등)
+- [x] Swagger UI 설정
+  - [x] `application.yml`에 SpringDoc 설정 추가
+    - `swagger-ui.path`: `/swagger-ui.html`
+    - `swagger-ui.url`: `/openapi/order-api.yaml` (정적 리소스 경로)
+    - `api-docs.path`: `/v3/api-docs`
+  - [x] Tags/Operations 정렬 옵션 설정 (alpha, method)
 
 ### 문서화
-- [ ] Swagger UI 접속 확인 (`http://localhost:8082/swagger-ui.html`)
-- [ ] API 명세서 스크린샷 또는 링크 README 추가
+- [x] Swagger UI 접속 확인 (`http://localhost:8082/swagger-ui.html`)
+- [x] OpenAPI Spec 파일 위치: `/kuku-order-system/src/main/resources/openapi/order-api.yaml`
+- [x] **[ADR]** API-First 접근 방식 결정 (`/docs/adr/012-api-first-openapi-strategy.md`)
+  - Code-First vs Spec-First 비교 분석
+  - 대안 비교 (Hybrid, Design-First with Code Generation)
+  - 면접 예상 질문 및 답변
 
-- [ ] PR 생성 및 머지
+### Spec-First의 장점 (실전 적용)
+1. **명확한 계약**: YAML 파일이 프론트엔드-백엔드 간 계약서 역할
+2. **코드 생성 가능**: `openapi-generator-maven-plugin`으로 클라이언트 SDK 자동 생성 가능 (Week 9 고려)
+3. **설계 집중**: 구현 전에 API 설계를 충분히 고민하게 함 (RESTful 원칙 준수)
+4. **버전 관리**: Git으로 YAML 변경 이력 추적 용이
+
+- [x] PR 생성 및 머지 (#37)
+
 
 ---
 
