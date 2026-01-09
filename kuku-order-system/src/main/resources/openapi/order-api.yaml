@@ -158,7 +158,6 @@ components:
           example: "AAPL"
         quantity:
           type: number
-          format: decimal
           description: 주문 수량
           example: 10
         side:
@@ -173,7 +172,6 @@ components:
           example: "MARKET"
         price:
           type: number
-          format: decimal
           nullable: true
           description: 지정가 (MARKET일 경우 null)
           example: null
@@ -201,7 +199,6 @@ components:
           example: "AAPL"
         quantity:
           type: number
-          format: decimal
           description: 주문 수량
           example: 10
         side:
@@ -216,7 +213,6 @@ components:
           example: "MARKET"
         price:
           type: number
-          format: decimal
           nullable: true
           description: 지정가
         status:

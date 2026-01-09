@@ -6,7 +6,7 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     // OpenAPI (Swagger) - Spec-First
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.15'
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
