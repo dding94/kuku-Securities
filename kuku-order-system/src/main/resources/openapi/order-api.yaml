@@ -156,6 +156,7 @@ components:
           type: string
           description: 종목 코드
           example: "AAPL"
+          minLength: 1
         quantity:
           type: number
           description: 주문 수량
@@ -201,6 +202,7 @@ components:
           type: number
           description: 주문 수량
           example: 10
+          exclusiveMinimum: true
         side:
           type: string
           enum: [BUY, SELL]
@@ -262,3 +264,11 @@ components:
           format: date-time
           description: 발생 시각
           example: "2025-01-09T06:00:00Z"
+        status:
+          type: integer
+          description: HTTP 상태 코드
+          example: 404
+        trackingId:
+          type: string
+          description: 추적용 요청 ID (디버깅 및 로그 추적)
+          example: "a1b2c3d4-e5f6-4789-0abc-def123456789"
